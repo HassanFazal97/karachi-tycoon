@@ -1,0 +1,109 @@
+[
+ {
+  "id": "mazdoor",
+  "en": "Mazdoor (labourer)",
+  "ur": "مزدور",
+  "party": 1,
+  "budget": 1.0,
+  "patience": 34,
+  "fameMult": 0.9,
+  "auth": 0.6,
+  "slots": {
+   "breakfast": 1.5,
+   "day": 1.0,
+   "evening": 0.9,
+   "night": 0.8
+  },
+  "prefs": {
+   "chai": 1.5,
+   "bun_kabab": 1.0,
+   "samosa": 1.3,
+   "dahi_baray": 0.4,
+   "nihari": 1.7
+  }
+ },
+ {
+  "id": "babu",
+  "en": "Office babu",
+  "ur": "بابو",
+  "party": 1,
+  "budget": 1.05,
+  "patience": 20,
+  "fameMult": 1.0,
+  "auth": 0.5,
+  "slots": {
+   "breakfast": 1.1,
+   "day": 1.6,
+   "evening": 0.8,
+   "night": 0.3
+  },
+  "prefs": {
+   "chai": 1.4,
+   "bun_kabab": 1.2,
+   "samosa": 1.0,
+   "dahi_baray": 0.8,
+   "nihari": 0.7
+  }
+ },
+ {
+  "id": "student",
+  "en": "Student",
+  "ur": "طالب علم",
+  "party": 1,
+  "budget": 0.95,
+  "patience": 26,
+  "fameMult": 1.5,
+  "auth": 0.3,
+  "slots": {
+   "breakfast": 0.4,
+   "day": 1.0,
+   "evening": 1.5,
+   "night": 1.1
+  },
+  "prefs": {
+   "chai": 1.0,
+   "bun_kabab": 1.7,
+   "samosa": 1.3,
+   "dahi_baray": 1.0,
+   "nihari": 0.3
+  }
+ },
+ {
+  "id": "family",
+  "en": "Family (khandaan)",
+  "ur": "خاندان",
+  "party": 3,
+  "budget": 1.2,
+  "patience": 30,
+  "fameMult": 1.2,
+  "auth": 1.0,
+  "slots": {
+   "breakfast": 0.3,
+   "day": 0.5,
+   "evening": 1.2,
+   "night": 1.7
+  },
+  "prefs": {
+   "chai": 0.5,
+   "bun_kabab": 1.3,
+   "samosa": 1.0,
+   "dahi_baray": 1.7,
+   "nihari": 1.0
+  }
+ },
+ {
+  "id": "uncle",
+  "en": "Uncle Rasheed",
+  "ur": "انکل رشید",
+  "party": 1,
+  "budget": 1.0,
+  "patience": 45,
+  "fameMult": 1.0,
+  "auth": 2.0,
+  "scripted": true,
+  "slots": {},
+  "prefs": {
+   "chai": 1
+  }
+ }
+]

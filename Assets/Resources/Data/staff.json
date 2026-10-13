@@ -1,0 +1,6 @@
+[
+  {"id":"chhotu","en":"Chhotu (helper)","ur":"چھوٹو","name":"Bilal","wage":700,
+   "does":"Serves, pours water and keeps the line moving. Orders go 30% faster and people wait longer.","speed":0.7,"patience":1.15},
+  {"id":"karigar","en":"Karigar (cook)","ur":"کاریگر","name":"Ustad Saleem","wage":1400,
+   "does":"A second pair of hands at the tawa. Cooks orders in parallel, better taste, and makes nihari possible.","cooks":1,"quality":8}
+]

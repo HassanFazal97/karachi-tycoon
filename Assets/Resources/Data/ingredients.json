@@ -1,0 +1,56 @@
+[
+ {
+  "id": "milk_patti",
+  "en": "Milk & patti",
+  "ur": "دودھ پتی",
+  "supplier": "kiryana",
+  "cost": 28,
+  "spoil": 1.0,
+  "target": 110
+ },
+ {
+  "id": "bun_egg",
+  "en": "Buns & eggs",
+  "ur": "بن انڈے",
+  "supplier": "kiryana",
+  "cost": 42,
+  "spoil": 0.5,
+  "target": 80
+ },
+ {
+  "id": "samosa_mix",
+  "en": "Samosa dough & aloo",
+  "ur": "سموسہ مسالہ",
+  "supplier": "kiryana",
+  "cost": 18,
+  "spoil": 0.3,
+  "target": 70
+ },
+ {
+  "id": "dahi_besan",
+  "en": "Dahi & besan",
+  "ur": "دہی بیسن",
+  "supplier": "kiryana",
+  "cost": 55,
+  "spoil": 1.0,
+  "target": 50
+ },
+ {
+  "id": "keema",
+  "en": "Keema (beef mince)",
+  "ur": "قیمہ",
+  "supplier": "butcher",
+  "cost": 58,
+  "spoil": 1.0,
+  "target": 80
+ },
+ {
+  "id": "nihari_gosht",
+  "en": "Nihari gosht (shank)",
+  "ur": "نہاری گوشت",
+  "supplier": "butcher",
+  "cost": 175,
+  "spoil": 0.5,
+  "target": 60
+ }
+]
