@@ -51,5 +51,7 @@ namespace KarachiTycoon.Sim
         // Free-to-play (design doc §22). Coins are the premium currency; NoAds removes interstitials.
         public int Coins;
         public bool NoAds;
+        // Bought "Dada ki Barkat": every sale earns double.
+        public bool DoubleIncome;
     }
 }

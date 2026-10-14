@@ -1,0 +1,29 @@
+{
+  "default": {
+    "RewardedSoftCapPerDay": 20,
+    "InterstitialFirstSession": 4,
+    "InterstitialMinPlayMinutes": 20,
+    "InterstitialMaxPerDay": 6,
+    "InterstitialMinGapSeconds": 600,
+    "InterstitialAfterRewardedSeconds": 180,
+    "InterstitialPauseDaysAfterPurchase": 30,
+    "PrayerBlackoutMinutes": 10,
+    "RamadanIftarBlackout": true,
+    "IftarBlackoutBeforeMinutes": 30,
+    "IftarBlackoutAfterMinutes": 45,
+    "MuharramBlackout": true,
+    "Placements": {
+      "double_tips": { "CapPerDay": 3, "CooldownSeconds": 0, "CountsTowardCap": true, "MinDay": 2 },
+      "refill_shout": { "CapPerDay": 6, "CooldownSeconds": 90, "CountsTowardCap": true, "MinDay": 2 },
+      "welcome_back": { "CapPerDay": 2, "CooldownSeconds": 0, "CountsTowardCap": false, "MinDay": 2 },
+      "generator": { "CapPerDay": 3, "CooldownSeconds": 0, "CountsTowardCap": false, "MinDay": 2 },
+      "finish_order": { "CapPerDay": 5, "CooldownSeconds": 60, "CountsTowardCap": true, "MinDay": 2 },
+      "swap_goal": { "CapPerDay": 1, "CooldownSeconds": 0, "CountsTowardCap": true, "MinDay": 2 },
+      "event_reward": { "CapPerDay": 1, "CooldownSeconds": 0, "CountsTowardCap": true, "MinDay": 2 }
+    }
+  },
+  "countries": {
+    "PK": {},
+    "CA": {}
+  }
+}

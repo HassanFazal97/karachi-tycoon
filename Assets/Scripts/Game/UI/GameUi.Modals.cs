@@ -85,7 +85,7 @@ namespace KarachiTycoon.Game
             var actions = Div("row", "modal-actions");
             box.Add(actions);
             // Rewarded ad (design doc §22): always optional.
-            var ad = IconBtn("ad", $"Watch an ad: double tips (+{Rs(l.Tips)})", gc.DoubleTips, "ad-chip", "btn-big");
+            var ad = IconBtn("ad", gc.Ads.SethJi ? $"Seth ji Club: double tips (+{Rs(l.Tips)})" : $"Watch an ad: double tips (+{Rs(l.Tips)})", gc.DoubleTips, "ad-chip", "btn-big");
             modalBind.Visible(ad, () => gc.CanDoubleTips);
             actions.With(ad, Div("grow"), Btn("Agla din · Next day", () => { CloseModal(); gc.NextDay(); }, "btn-primary", "btn-big"));
         }
@@ -156,10 +156,10 @@ namespace KarachiTycoon.Game
         // ---------- simulated ad ----------
         void UpdateAdOverlay()
         {
-            bool showing = gc.SimAds.Showing != null;
+            bool showing = gc.Ads.Showing != null;
             if (showing && adOverlay == null)
             {
-                adOverlay = Div("ad-overlay").With(new Icon("ad").Cls("ad-icon"), Text(gc.SimAds.Showing, "story-title"), Text("Simulated ad · the real one plugs in through IAdsService", "muted"));
+                adOverlay = Div("ad-overlay").With(new Icon("ad").Cls("ad-icon"), Text(gc.Ads.Showing, "story-title"), Text("Simulated ad · the real SDK plugs in through IAdsProvider", "muted"));
                 root.Add(adOverlay);
             }
             else if (!showing && adOverlay != null) { adOverlay.RemoveFromHierarchy(); adOverlay = null; }

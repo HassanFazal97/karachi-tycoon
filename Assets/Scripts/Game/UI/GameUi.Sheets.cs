@@ -227,11 +227,20 @@ namespace KarachiTycoon.Game
         // ---------- Store ----------
         void StoreSheet()
         {
-            var s = sim.S;
-            Add(Text("Purchases are simulated until Unity IAP is connected. Nothing is charged.", "hint"));
+            var w = gc.Wallet;
+            Add(Text("Purchases are simulated until Unity IAP and Steamworks are connected. Nothing is charged.", "hint"));
             var wallet = Text("", "h2");
-            Add(Div("card").With(Div("row").With(new Icon("coin").Cls("coin-icon"), wallet)));
-            sheetBind.Text(wallet, () => $"{s.Coins:N0} silver coins{(s.NoAds ? " · No Ads owned" : "")}");
+            var perks = Text("", "muted", "small");
+            Add(Div("card").With(Div("row").With(new Icon("coin").Cls("coin-icon"), wallet), perks));
+            sheetBind.Text(wallet, () => $"{w.Coins:N0} silver coins");
+            sheetBind.Text(perks, () =>
+            {
+                var owned = new List<string>();
+                if (w.NoAds) owned.Add("No Ads");
+                if (w.DoubleIncome) owned.Add("2x income");
+                if (w.SethJi) owned.Add($"Seth ji Club until {w.SethJiUntil:d MMM}");
+                return owned.Count > 0 ? "Yours: " + string.Join(" · ", owned) : "Nothing bought yet.";
+            });
             foreach (var p in gc.Store.Products)
             {
                 var prod = p;
@@ -239,9 +248,10 @@ namespace KarachiTycoon.Game
                 Add(card);
                 card.Add(Div("row").With(Text(p.Title, "h2", "grow"), Text(p.PriceUsd, "chip", "chip-plain")));
                 card.Add(Text(p.Description, "muted", "small"));
-                var buy = Btn("Buy", () => gc.Buy(prod), "btn-primary", "wide");
+                var buy = Btn("", () => gc.Buy(prod), "btn-primary", "wide");
                 card.Add(buy);
-                if (p.Id == "no_ads") sheetBind.Visible(card, () => !s.NoAds);
+                sheetBind.Text(buy, () => prod.SubscriptionDays > 0 && w.SethJi ? "Extend 30 days" : "Buy");
+                sheetBind.Visible(card, () => !w.Owns(prod));
             }
         }
     }

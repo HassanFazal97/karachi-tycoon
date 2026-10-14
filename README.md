@@ -47,6 +47,7 @@ Phones get the phone layout automatically. To preview it in the editor, set the 
 | `Assets/Editor/BuildTools.cs` | Project setup and a command-line macOS build. |
 | `design/upgrade-plan.md` | The plan for onboarding, UI/UX and engagement. |
 | `Tools/BalanceRunner/` | Runs the simulation for many days without Unity, to check balance. |
+| `Tools/AdRulesCheck/` | Checks the ad rules, caps and prayer-time blackouts without Unity. |
 
 ## Balance check without Unity
 
@@ -58,15 +59,21 @@ It plays a simple strategy for 7 days (`ghee` or `oil`) and prints each day's le
 
 ## Ads and purchases
 
-The game only talks to `IAdsService` and `IStoreService`. For now `SimulatedAds` shows a short fake ad and `SimulatedStore` grants products straight away, so the whole flow can be played in the editor.
+Ads live in `Assets/Scripts/Game/Ads` (design doc §22):
 
-- Rewarded ads: double tonight's tips on the end-of-day ledger, and refill the "Aao bhai" shout.
-- Interstitials: only when you press Next day, never in the first two sessions, at most one every 10 minutes, and not with No Ads.
-- `AdPolicy` blocks every ad within 8 game minutes of a prayer time (design doc §19 and §22).
-- Products are in `Catalog`: No Ads, Dada's Trunk starter pack and three coin packs.
-- Coins and No Ads are saved apart from the day save, so a reload never takes back a purchase.
+- `AdsService` is the only way into ads. It asks `AdRules` whether an ad may show, plays it through the platform's `IAdsProvider`, gives Seth ji Club members the reward without an ad, and logs every outcome (`ad_rewarded_start/complete/skipped/blocked`, `ad_interstitial_shown/skipped` with a reason) to `IAnalytics`.
+- Providers: `SimulatedAdsProvider` (editor, and test builds with `-kt-sim-ads`), `NoAdsProvider` (Steam, since Valve does not allow ads, and builds without an SDK), and `AppLovinMaxProvider`, a stub to fill in once the AppLovin MAX plugin is imported and `APPLOVIN_MAX` is defined.
+- `AdRules` (plain C#): a rewarded soft cap of 20 a day with per-placement caps, cooldowns and a first day (welcome-back and generator offers don't count toward the cap). No ads in the tutorial or on day 1. Interstitials only at the day-end break: not in the first 3 sessions or 20 minutes of play, at most 6 a day and one per 10 minutes, skipped right after a rewarded view, off for 30 days after any purchase, never with No Ads.
+- Blackouts (`PrayerTimes`, plain C#): no ads within 10 minutes of the real prayer times on the device's clock (sun position for a location guessed from the time zone, with Karachi and the main Canadian cities listed), around iftar in Ramadan, and all day on 9-10 Muharram. The in-game azaan also blocks them.
+- Every number comes from `AdConfig`, loaded from `Resources/Data/ads.json` with per-country overrides under `"countries"`. A Remote Config provider can replace `LocalRemoteConfig` and serve the same JSON.
 
-To go live, add Unity LevelPlay (ads) and Unity IAP (stores), then write a `LevelPlayAds : IAdsService` and a `UnityIapStore : IStoreService` and swap them in `GameController`. On Steam, use Steamworks.NET for purchases and no ads.
+Purchases: the game talks to `IStoreService`; `SimulatedStore` grants products into the `Wallet` (saved apart from the day save). Products in `Catalog`: No Ads, Dada ki Barkat (permanent 2x income, applied in the Sim), Seth ji Club (30 days, ad bonuses without ads), Dada's Trunk and three coin packs. To go live, write `UnityIapStore` / `SteamStore : IStoreService` and swap them in `GameController`.
+
+Check the ad rules without Unity:
+
+```
+dotnet run --project Tools/AdRulesCheck
+```
 
 ## Checking the game without the editor
 

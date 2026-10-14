@@ -30,6 +30,16 @@ namespace KarachiTycoon.Game
         }
     }
 
+    // Bundled config (Resources/Data/<key>.json) until a real Remote Config service is connected.
+    public class LocalRemoteConfig : Ads.IRemoteConfig
+    {
+        public string Get(string key) => Resources.Load<TextAsset>("Data/" + key)?.text;
+        public string Country
+        {
+            get { try { return System.Globalization.RegionInfo.CurrentRegion.TwoLetterISORegionName; } catch { return ""; } }
+        }
+    }
+
     // Analytics stand-in. Swap in a real backend (Unity Analytics, GameAnalytics...) behind this interface.
     public interface IAnalytics
     {

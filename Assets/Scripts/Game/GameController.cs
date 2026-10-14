@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using KarachiTycoon.Game.Ads;
 using KarachiTycoon.Sim;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -31,11 +32,10 @@ namespace KarachiTycoon.Game
         public StreetBuilder Street { get; private set; }
         public CameraRig Rig { get; private set; }
         public AudioDirector Audio { get; private set; }
-        public IAdsService Ads { get; private set; }
-        public SimulatedAds SimAds { get; private set; }
+        public AdsService Ads { get; private set; }
         public IStoreService Store { get; private set; }
+        public Wallet Wallet { get; private set; } = new Wallet();
         public IAnalytics Analytics { get; } = new LogAnalytics();
-        public AdPolicy Policy { get; } = new AdPolicy();
         public int Sessions { get; private set; }
         public float Speed { get; private set; } = 1;
         public bool Playing => Sim != null;
@@ -57,8 +57,9 @@ namespace KarachiTycoon.Game
             cam.orthographic = true; cam.nearClipPlane = 1; cam.farClipPlane = 420;
             Sessions = PlayerPrefs.GetInt(SessionsKey, 0) + 1;
             PlayerPrefs.SetInt(SessionsKey, Sessions);
-            SimAds = gameObject.AddComponent<SimulatedAds>();
-            Ads = SimAds;
+            LoadWallet();
+            Store = new SimulatedStore(Wallet);
+            Ads = new AdsService(AdsService.CreateProvider(gameObject), new LocalRemoteConfig(), Analytics, AdContextNow, () => Wallet);
             foreach (var l in FindObjectsByType<Light>()) if (l.type == LightType.Directional) l.gameObject.SetActive(false);
             Rig = cam.gameObject.AddComponent<CameraRig>();
             Rig.Init(cam, Settings.PhoneLayout);
@@ -76,7 +77,6 @@ namespace KarachiTycoon.Game
             if (load) Sim.Load(PlayerPrefs.GetString(SaveKey));
             else Sim.NewGame(Names[nameChoice].en, Names[nameChoice].ur, hero);
             ApplyWallet();
-            Store = new SimulatedStore(Sim.S);
             Street = new GameObject("Burns Road").AddComponent<StreetBuilder>();
             Street.Build(Data, Sim.S);
             Street.RefreshStage(Sim);
@@ -121,40 +121,50 @@ namespace KarachiTycoon.Game
             PlayerPrefs.Save();
         }
         // Purchases live outside the day-start snapshot so a reload never loses them.
-        public void SaveWallet() { PlayerPrefs.SetString(WalletKey, JsonConvert.SerializeObject(new { Sim.S.Coins, Sim.S.NoAds })); PlayerPrefs.Save(); }
-        void ApplyWallet()
+        public void SaveWallet() { PlayerPrefs.SetString(WalletKey, JsonConvert.SerializeObject(Wallet)); PlayerPrefs.Save(); }
+        void LoadWallet()
         {
             var json = PlayerPrefs.GetString(WalletKey, "");
             if (string.IsNullOrEmpty(json)) return;
-            var w = JsonConvert.DeserializeAnonymousType(json, new { Coins = 0, NoAds = false });
-            Sim.S.Coins = w.Coins; Sim.S.NoAds = w.NoAds;
+            try { Wallet = JsonConvert.DeserializeObject<Wallet>(json) ?? new Wallet(); } catch { Wallet = new Wallet(); }
+            // Saves from before the Owned list still own No Ads.
+            if (Wallet.NoAds) Wallet.Owned.Add("no_ads");
+        }
+        // The Sim only needs to know about the purchases that change play.
+        void ApplyWallet()
+        {
+            if (Sim == null) return;
+            Sim.S.Coins = Wallet.Coins; Sim.S.NoAds = Wallet.NoAds; Sim.S.DoubleIncome = Wallet.DoubleIncome;
         }
 
-        // Design doc §19: no ads or prompts around azaan and prayer.
+        // Design doc §19: no ads or prompts around the in-game azaan. (Real-world prayer times are AdRules' job.)
         public bool SensitiveMoment => Sim != null && PrayerMinutes.Any(p => Mathf.Abs(Sim.S.Minute - p) < 8);
+
+        AdContext AdContextNow() => new AdContext
+        {
+            GameDay = Sim?.S.Day ?? 0, Session = Sessions, InGameSensitive = SensitiveMoment,
+            Tutorial = false, NoAds = Wallet.NoAds, AdsSupported = Ads?.Provider.Supported ?? false,
+        };
 
         // ---------- actions the UI calls ----------
         public void SetSpeed(float s) { if (s > 0) prevSpeed = s; Speed = s; }
         public void TogglePause() => SetSpeed(Speed > 0 ? 0 : prevSpeed);
 
-        public bool CanRefillShout => Sim.CanRefillShout && Policy.CanShowRewarded(SensitiveMoment) && Ads.RewardedReady;
-        public void RefillShout() => Ads.ShowRewarded("refill_shout", ok => { if (ok) { Policy.MarkRewarded(); Sim.RewardRefillShout(); Analytics.Event("rewarded", ("placement", "refill_shout")); } });
+        public bool CanRefillShout => Sim.CanRefillShout && Ads.CanOffer("refill_shout");
+        public void RefillShout() => Ads.Rewarded("refill_shout", Sim.RewardRefillShout);
 
-        public bool CanDoubleTips => Sim.CanDoubleTips && Policy.CanShowRewarded(false) && Ads.RewardedReady;
-        public void DoubleTips() => Ads.ShowRewarded("double_tips", ok => { if (ok) { Policy.MarkRewarded(); Sim.RewardDoubleTips(); Analytics.Event("rewarded", ("placement", "double_tips")); } });
+        public bool CanDoubleTips => Sim.CanDoubleTips && Ads.CanOffer("double_tips");
+        public void DoubleTips() => Ads.Rewarded("double_tips", Sim.RewardDoubleTips);
 
-        public void NextDay()
-        {
-            void Next() { Sim.NextDay(); Save(); }
-            // Interstitials only at this natural break, never early in a player's life or near azaan.
-            if (Policy.CanShowInterstitial(Sim.S, Sessions, SensitiveMoment)) { Policy.MarkInterstitial(); Analytics.Event("interstitial", ("placement", "day_end")); Ads.ShowInterstitial("day_end", Next); }
-            else Next();
-        }
+        // Interstitials only at this natural break; AdsService decides whether one shows.
+        public void NextDay() => Ads.AtBreak("day_end", () => { Sim.NextDay(); Save(); });
 
         public void Buy(Product p) => Store.Purchase(p.Id, ok =>
         {
             if (!ok) return;
+            ApplyWallet();
             SaveWallet();
+            Ads.OnPurchase();
             Toast($"Bought {p.Title}.", "good");
             Analytics.Event("purchase", ("product", p.Id), ("price", p.PriceUsd));
         });
@@ -162,7 +172,9 @@ namespace KarachiTycoon.Game
         // ---------- loop ----------
         void Update()
         {
-            if (Sim == null || Sim.S.DayOver || Speed <= 0 || SimAds.Showing != null || ui.Blocking) return;
+            if (Sim == null) return;
+            Ads.Tick(Time.unscaledDeltaTime);
+            if (Sim.S.DayOver || Speed <= 0 || Ads.Showing != null || ui.Blocking) return;
             float minutesPerSecond = (Data.Balance.DayEnd - Data.Balance.DayStart) / Data.Balance.RealSecondsPerDay;
             float g = Mathf.Min(Time.deltaTime, 0.1f) * minutesPerSecond * Speed;
             while (g > 0 && !Sim.S.DayOver) { float step = Mathf.Min(0.5f, g); Sim.Tick(step); g -= step; }

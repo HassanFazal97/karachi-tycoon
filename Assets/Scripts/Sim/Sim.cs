@@ -526,9 +526,10 @@ namespace KarachiTycoon.Sim
             {
                 var d = Dish[it.Dish];
                 int price = S.Menu[it.Dish].Price;
-                bill += price * it.Qty;
+                int paid = price * it.Qty * (S.DoubleIncome ? 2 : 1);
+                bill += paid;
                 if (!t.Sales.TryGetValue(it.Dish, out var sale)) t.Sales[it.Dish] = sale = new Sale();
-                sale.Qty += it.Qty; sale.Rs += price * it.Qty;
+                sale.Qty += it.Qty; sale.Rs += paid;
                 int lvlBefore = MasteryLevel(it.Dish);
                 S.Xp[it.Dish] += it.Qty;
                 if (d.Fat > 0)
