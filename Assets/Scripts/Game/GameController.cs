@@ -13,7 +13,7 @@ namespace KarachiTycoon.Game
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Start()
         {
-            if (Object.FindFirstObjectByType<GameController>() != null) return;
+            if (Object.FindAnyObjectByType<GameController>() != null) return;
             new GameObject("Karachi Tycoon").AddComponent<GameController>();
         }
     }
@@ -57,7 +57,7 @@ namespace KarachiTycoon.Game
             PlayerPrefs.SetInt(SessionsKey, sessions);
             simAds = gameObject.AddComponent<SimulatedAds>();
             ads = simAds;
-            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) if (l.type == LightType.Directional) l.gameObject.SetActive(false);
+            foreach (var l in FindObjectsByType<Light>()) if (l.type == LightType.Directional) l.gameObject.SetActive(false);
             UpdateCamera();
         }
 
