@@ -170,7 +170,14 @@ Special days that change footfall and demand, defined in `events.json`:
 
 M1 and M2 are the most important: everything else builds on the new UI layer and the tap-to-serve loop. I'd check balance with BalanceRunner at the end of every milestone.
 
-## Questions for Fazal
+## Decisions (14 Oct 2026)
+- Tap to serve: yes.
+- Phone and desktop get separate layouts (done in M1: `.phone` / `.desktop`). Phones are landscape.
+- UI text is English; Urdu stays decorative (the painted Nastaliq signs).
+- No artist: stylised, code-drawn art for now.
+- Ramzan mode: the answer was "Uncle Rasheed"; to confirm.
+
+## Questions for Fazal (answered above)
 1. **Tap to serve:** OK to make the shift active (tap customers, timing bonus), or keep it a pure management sim?
 2. **Platform priority:** phone portrait first, or landscape (phone and Steam share one layout)?
 3. **Urdu UI:** must the first new UI ship in Urdu, or is English with Urdu headings OK to start?

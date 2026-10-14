@@ -137,8 +137,11 @@ namespace KarachiTycoon.Sim
             return d.Ingredients.Sum(kv => Ing[kv.Key].Cost * kv.Value) + d.Fat * D.Balance.Fat[S.Fat].CostPerUnit;
         }
 
-        float PriceTolerance(string id, ArchetypeDef a) =>
-            Dish[id].RefPrice * a.Budget * (1 + 0.06f * S.Fame) * (1 + 0.04f * (S.Auth - 2));
+        // What a typical customer is happy to pay today; fame and Asli-pan raise it.
+        public float ExpectedPrice(string id) => Dish[id].RefPrice * (1 + 0.06f * S.Fame) * (1 + 0.04f * (S.Auth - 2));
+        float PriceTolerance(string id, ArchetypeDef a) => ExpectedPrice(id) * a.Budget;
+        // Above 1, some customers refuse: (ratio - 1) / 0.6 of a typical crowd walks off.
+        public float PriceRatio(string id) => S.Menu[id].Price / ExpectedPrice(id);
 
         public HashSet<string> NeededIngredients()
         {
