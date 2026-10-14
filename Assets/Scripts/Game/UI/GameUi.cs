@@ -9,8 +9,9 @@ using static KarachiTycoon.Game.Util;
 namespace KarachiTycoon.Game
 {
     // All on-screen UI, built with UI Toolkit in code and styled by Resources/UI/Main.uss.
-    // Two layouts share the same views: "phone" (landscape, big touch targets, bottom sheets,
-    // thumb-reach buttons) and "desktop" (denser HUD, labelled toolbar with key hints, side panel).
+    // Two layouts share the same views: "phone" (portrait, one hand: thin two-row top bar, a bottom
+    // dock with the shout in the middle, half-height bottom sheets) and "desktop" (landscape for
+    // Steam: denser HUD, labelled toolbar with key hints, side panel).
     public partial class GameUi : MonoBehaviour
     {
         GameController gc;
@@ -71,9 +72,9 @@ namespace KarachiTycoon.Game
 
         void ApplyPanelScale()
         {
-            // Phone: about one unit per iPhone point in landscape. Desktop: laid out for 1600x900.
-            panelSettings.referenceResolution = phone ? new Vector2Int(844, 390) : new Vector2Int(1600, 900);
-            panelSettings.match = phone ? 1f : 0.5f;
+            // Phone: about one unit per iPhone point in portrait (matched on width). Desktop: laid out for 1600x900.
+            panelSettings.referenceResolution = phone ? new Vector2Int(390, 844) : new Vector2Int(1600, 900);
+            panelSettings.match = phone ? 0f : 0.5f;
             panelSettings.scale = Settings.UiScale;
         }
 
@@ -240,6 +241,9 @@ namespace KarachiTycoon.Game
             var s = sim.S; var b = gc.Data.Balance;
             var top = Div("topbar");
             hud.Add(top);
+            // Phones stack the bar in two rows: money, stars, clock and buttons, then the goal.
+            var row1 = phone ? Div("row", "top-row") : top;
+            if (phone) top.Add(row1);
             hud.Add(new TruckStrip().Cls("hud-strip"));
 
             // Galla (cash box).
@@ -249,7 +253,7 @@ namespace KarachiTycoon.Game
             galla.With(Text("GALLA", "stat-label"), cash, Div("row", "coins").With(new Icon("coin").Cls("coin-icon"), coins));
             hudBind.Text(cash, () => phone ? RsShort(sim.S.Cash) : Rs(sim.S.Cash));
             hudBind.Text(coins, () => sim.S.Coins.ToString("N0"));
-            top.Add(galla);
+            row1.Add(galla);
 
             // Reputation.
             var fame = new Stars(); var auth = new Stars();
@@ -257,12 +261,12 @@ namespace KarachiTycoon.Game
                 Div("row", "rep-row").With(Text("Shohrat", "rep-label"), fame),
                 Div("row", "rep-row", "auth-row").With(Text("Asli-pan", "rep-label"), auth));
             hudBind.Do(() => { fame.Value = sim.S.Fame; auth.Value = sim.S.Auth; });
-            top.Add(rep);
+            if (!phone) row1.Add(rep);
 
             // Clock.
             var dial = new ClockDial(b.DayStart, b.DayEnd, GameController.PrayerMinutes);
             var time = Text("", "clock-time"); var when = Text("", "stat-label"); var azaan = Text("", "azaan");
-            top.Add(Div("stat", "clock").With(dial, Div("col").With(time, when, azaan)));
+            row1.Add(Div("stat", "clock").With(dial, Div("col").With(time, when, azaan)));
             hudBind.Do(() => dial.Minute = sim.S.Minute);
             hudBind.Text(time, () => Clock(sim.S.Minute));
             hudBind.Text(when, () => phone ? $"{SlotName(sim.Slot)} · Day {sim.S.Day}" : $"{SlotName(sim.Slot)} · {sim.Weekday} · Day {sim.S.Day}");
@@ -277,7 +281,9 @@ namespace KarachiTycoon.Game
             var goalTitle = Text("", "stat-label");
             var (bar1, fill1) = Bar("goal-bar"); var (bar2, fill2) = Bar("goal-bar");
             var l1 = Text("", "goal-text"); var l2 = Text("", "goal-text");
-            goal.With(Div("row").With(new Icon("target").Cls("goal-icon"), goalTitle), Div("goal-line").With(bar1, l1), Div("goal-line").With(bar2, l2));
+            var goalHead = Div("row").With(new Icon("target").Cls("goal-icon"), goalTitle);
+            if (phone) goalHead.With(Div("grow"), rep); // phones: the stars sit on the goal row, the top row is full
+            goal.With(goalHead, Div("goal-line").With(bar1, l1), Div("goal-line").With(bar2, l2));
             top.Add(goal);
             hudBind.Text(goalTitle, () => sim.S.Stage == "cart" ? "ACT 1 · THE CART" : sim.S.Act2Done ? "BURNS ROAD KNOWS YOUR NAME" : "ACT 2 · THE PAVEMENT DHABA");
             hudBind.Fill(fill1, () => sim.S.Stage == "cart" ? sim.S.TotalRevenue / (float)b.Act1.Revenue : sim.S.Cash / (float)b.Act2.Cash);
@@ -312,8 +318,13 @@ namespace KarachiTycoon.Game
                     speed.Add(btn);
                 }
             }
-            top.Add(speed);
-            top.Add(IconBtn("settings", null, OpenSettings, "gear-btn"));
+            if (phone)
+            {
+                var store = IconBtn("store", null, () => ToggleSheet("Store"), "gear-btn");
+                hudBind.Class(store, "on", () => sheetOpen == "Store");
+                row1.With(Div("grow"), store, IconBtn("settings", null, OpenSettings, "gear-btn"));
+            }
+            else top.With(speed, IconBtn("settings", null, OpenSettings, "gear-btn"));
 
             // Load shedding banner.
             var banner = Div("banner").With(new Icon("bolt").Cls("banner-icon"), Text("", "banner-text")).Ghost(true);
@@ -328,6 +339,7 @@ namespace KarachiTycoon.Game
             foreach (var t in Tabs)
             {
                 var id = t.id;
+                if (phone && id == "Store") continue; // the coin button in the top bar opens it
                 var btn = IconBtn(t.icon, t.label, () => ToggleSheet(id), "dock-btn");
                 if (!phone && t.key != Key.None) btn.Add(Text(t.key.ToString(), "key-hint"));
                 var badge = Div("badge");
@@ -350,8 +362,11 @@ namespace KarachiTycoon.Game
 
             if (phone)
             {
-                // Thumb zones: the shout under the left thumb, panels under the right.
-                bottom.With(Div("col", "aao-zone").Ghost().With(adShout, aao), Div("grow").Ghost(), dock);
+                // One thumb: the shout in the middle of the dock, two panels either side, speed in the corner above.
+                var zone = Div("col", "aao-zone").Ghost().With(adShout, aao);
+                dock.Insert(2, zone);
+                bottom.With(dock);
+                hud.Add(Div("speed-corner").Ghost().With(speed));
             }
             else
             {

@@ -25,7 +25,8 @@ namespace KarachiTycoon.EditorTools
             new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
 
         static bool NeedsSetUp() =>
-            !File.Exists(ScenePath) || !File.Exists(PanelPath) || PlayerSettingsObject().FindProperty("activeInputHandler")?.intValue != 2;
+            !File.Exists(ScenePath) || !File.Exists(PanelPath) || PlayerSettingsObject().FindProperty("activeInputHandler")?.intValue != 2
+            || PlayerSettings.defaultInterfaceOrientation != UIOrientation.Portrait;
 
         // The game builds itself in code, so the scene only needs to exist (players need one to boot).
         [MenuItem("Karachi Tycoon/Set Up Project")]
@@ -67,6 +68,9 @@ namespace KarachiTycoon.EditorTools
             var player = PlayerSettingsObject();
             var input = player.FindProperty("activeInputHandler");
             if (input != null && input.intValue != 2) { input.intValue = 2; player.ApplyModifiedProperties(); }
+
+            // Phones play in portrait, one-handed. Steam builds are landscape windows and ignore this.
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
 
             PlayerSettings.runInBackground = true;
             PlayerSettings.resizableWindow = true;

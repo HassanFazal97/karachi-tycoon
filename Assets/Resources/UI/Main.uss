@@ -270,77 +270,86 @@
 .title-card .btn-big { margin-top: 8px; }
 
 /* =========================================================
-   PHONE (landscape, ~844x390 points): compact bar, thumb-zone buttons,
-   half-screen sheet, two-column title. Minimum 40pt touch targets.
+   PHONE (portrait, ~390x844 points, one hand): two-row top bar, a bottom
+   dock with the shout in the middle, speed in the corner, half-height
+   bottom sheets, single-column modals. Touch targets 44pt and up.
    ========================================================= */
-.phone .topbar { height: 52px; padding: 4px 10px; }
+.phone .topbar { flex-direction: column; align-items: stretch; height: auto; padding: 6px 10px 6px 10px; }
+.phone .top-row { flex-direction: row; align-items: center; }
 .phone .hud-strip { height: 6px; }
-.phone .stat { margin-right: 12px; }
+.phone .stat { margin-right: 10px; flex-shrink: 0; }
+.phone .money, .phone .stat-label, .phone .clock-time { white-space: nowrap; }
+.phone .rep { margin: 0; }
+.phone .rep-row { margin: 0; }
 .phone .galla .stat-label { display: none; }
-.phone .money { font-size: 19px; }
+.phone .money { font-size: 20px; }
 .phone .coins { display: none; }
 .phone .auth-row { display: none; }
 .phone .rep-label { display: none; }
-.phone .stars { width: 76px; height: 14px; }
-.phone .clock-dial { width: 38px; height: 38px; margin-right: 6px; }
+.phone .stars { width: 70px; height: 13px; }
+.phone .clock-dial { width: 34px; height: 34px; margin-right: 6px; }
 .phone .clock-time { font-size: 15px; }
 .phone .azaan { display: none; }
-.phone .goal { min-width: 120px; max-width: 220px; }
-.phone .goal-text { width: 70px; font-size: 10px; }
-.phone .goal-line { margin-top: 2px; }
-.phone .speed-btn, .phone .gear-btn { width: 44px; height: 40px; }
-.phone .banner-row { top: 62px; align-items: flex-end; padding-right: 10px; }
-.phone .banner { width: auto; }
+.phone .gear-btn { width: 44px; height: 44px; margin-left: 6px; }
+.phone .gear-btn.on { background-color: var(--gold); }
+.phone .gear-btn.on .icon { color: var(--dark); }
+.phone .goal { min-width: 0; max-width: none; margin: 6px 0 0 0; flex-direction: column; }
+.phone .goal-line { margin-top: 3px; }
+.phone .goal-text { width: 110px; font-size: 11px; -unity-text-align: middle-right; }
+.phone .banner-row { top: 112px; }
 
-.phone .bottom-row { padding: 8px 10px; }
-.phone .dock { background-color: rgba(59, 42, 30, 0.92); border-radius: 30px; padding: 5px; border-width: 1px; border-color: rgba(226, 194, 126, 0.45); }
-.phone .dock-btn { width: 56px; height: 52px; border-radius: 26px; margin: 0 2px; padding: 3px; }
-.phone .dock-btn .icon { width: 22px; height: 22px; }
-.phone .dock-btn .icon-btn-label { font-size: 9px; margin-top: 1px; }
-.phone .aao { width: 76px; height: 76px; border-radius: 38px; flex-direction: column; padding: 0; }
-.phone .aao .ring { left: 2px; top: 2px; width: 68px; height: 68px; }
-.phone .aao-icon { width: 26px; height: 26px; margin: 0; }
-.phone .aao-label { font-size: 11px; }
+.phone .bottom-row { padding: 0 8px 10px 8px; }
+.phone .dock { flex-grow: 1; justify-content: space-between; align-items: flex-end; background-color: rgba(59, 42, 30, 0.94); border-radius: 22px; padding: 6px 6px 8px 6px; border-width: 1px; border-color: rgba(226, 194, 126, 0.45); }
+.phone .dock-btn { width: 64px; height: 56px; border-radius: 14px; margin: 0; padding: 4px; }
+.phone .dock-btn .icon { width: 24px; height: 24px; }
+.phone .dock-btn .icon-btn-label { font-size: 11px; margin-top: 2px; }
+.phone .aao-zone { margin-top: -40px; }
+.phone .aao { width: 92px; height: 92px; border-radius: 46px; flex-direction: column; padding: 0; border-width: 3px; }
+.phone .aao .ring { left: 3px; top: 3px; width: 80px; height: 80px; }
+.phone .aao-icon { width: 30px; height: 30px; margin: 0; }
+.phone .aao-label { font-size: 12px; }
 .phone .ad-chip { margin: 0 0 6px 0; padding: 4px 10px; }
 .phone .ad-chip .icon-btn-label { font-size: 11px; }
+.phone .speed-corner { position: absolute; right: 10px; bottom: 132px; }
+.phone .speed { flex-direction: column; margin: 0; }
+.phone .speed-btn { width: 48px; height: 44px; margin: 6px 0 0 0; background-color: rgba(42, 29, 21, 0.9); border-radius: 12px; }
 
-.phone .toast-layer { align-items: flex-start; padding: 62px 0 0 10px; }
-.phone .toast { width: 44%; padding: 7px 10px; }
-.phone .toast-text { font-size: 12px; }
-.phone .toast .portrait { width: 26px; height: 26px; }
+.phone .toast-layer { align-items: center; padding: 120px 10px 0 10px; }
+.phone .toast { width: 100%; padding: 8px 10px; }
+.phone .toast-text { font-size: 13px; }
+.phone .toast .portrait { width: 28px; height: 28px; }
 
-.phone .sheet { right: 0; top: 0; bottom: 0; width: 54%; border-radius: 16px 0 0 16px; border-right-width: 0; translate: 110% 0; }
+.phone .sheet { left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 58%; border-radius: 18px 18px 0 0; border-bottom-width: 0; translate: 0 110%; }
 .phone .sheet.open { translate: 0 0; }
-.phone .sheet-head { padding: 6px 10px; }
-.phone /* slim scrollbars without arrow buttons */
-.unity-scroller--vertical { width: 8px; border-width: 0; background-color: rgba(0, 0, 0, 0); }
-.unity-scroller--vertical > .unity-scroller__low-button, .unity-scroller--vertical > .unity-scroller__high-button { display: none; }
-.unity-scroller--vertical .unity-base-slider__tracker { background-color: rgba(0, 0, 0, 0.05); border-width: 0; border-radius: 4px; }
-.unity-scroller--vertical .unity-base-slider__dragger { background-color: rgba(59, 42, 30, 0.4); border-width: 0; border-radius: 4px; left: 1px; width: 6px; }
+.phone .sheet-head { padding: 8px 12px; }
+.phone .close-btn { width: 44px; height: 44px; }
+.phone .card { padding: 10px 12px; }
+.phone .h2 { font-size: 15px; }
+.phone .price { font-size: 16px; min-width: 70px; }
+.phone .toggle { min-width: 100px; min-height: 40px; }
+.phone .btn-sm { min-width: 44px; min-height: 40px; }
 .phone .unity-scroller--vertical { width: 4px; }
-.close-btn { width: 44px; height: 40px; }
-.phone .card { padding: 8px 10px; }
-.phone .h2 { font-size: 14px; }
-.phone .price { font-size: 15px; min-width: 64px; }
-.phone .toggle { min-width: 96px; min-height: 36px; }
 
-.phone .modal { max-width: 96%; max-height: 96%; padding: 0 14px 10px 14px; }
-.phone .modal-strip { margin: 0 -14px 6px -14px; height: 7px; }
-.phone .khata { width: 96%; }
-.phone .khata-title { font-size: 20px; }
-.phone .khata-net { font-size: 20px; }
-.phone .story { width: 520px; }
-.phone .story-title { font-size: 20px; }
-.phone .story-body { font-size: 14px; }
-.phone .settings { width: 500px; }
-.phone .btn-big { min-height: 44px; }
+.phone .modal { max-width: 94%; max-height: 90%; padding: 0 14px 12px 14px; }
+.phone .modal-strip { margin: 0 -14px 8px -14px; height: 8px; }
+.phone .khata, .phone .story, .phone .settings { width: 94%; }
+.phone .khata-cols { flex-direction: column; }
+.phone .khata-col { margin-right: 0; flex-basis: auto; flex-grow: 0; }
+.phone .khata-title { font-size: 22px; }
+.phone .khata-net { font-size: 22px; }
+.phone .stamp { font-size: 16px; }
+.phone .story-title { font-size: 21px; }
+.phone .story-body { font-size: 15px; }
+.phone .modal-actions { flex-direction: column-reverse; align-items: stretch; }
+.phone .modal-actions .btn { margin: 6px 0 0 0; }
+.phone .modal-actions .grow { display: none; }
+.phone .setting-label { width: 110px; }
+.phone .btn-big { min-height: 48px; }
 
-.phone .title-card { width: 94%; flex-direction: row; padding: 14px 16px; }
-.phone .title-col { flex-grow: 1; flex-basis: 0; }
-.phone .title-left { margin-right: 16px; }
-.phone .title-name { font-size: 24px; }
-.phone .title-icon { width: 40px; height: 40px; }
-.phone .title-story { font-size: 12px; }
-.phone .title-strip { height: 14px; }
-.phone .choice { min-height: 36px; margin-bottom: 4px; }
-.phone .label-gold { margin: 4px 0 3px 0; }
+.phone .title-card { width: 92%; padding: 18px 18px; }
+.phone .title-name { font-size: 27px; letter-spacing: 1px; }
+.phone .title-icon { width: 42px; height: 42px; }
+.phone .title-story { font-size: 14px; }
+.phone .title-strip { height: 16px; }
+.phone .choice { min-height: 44px; }
+.phone .title-card .seg-btn { min-height: 44px; }

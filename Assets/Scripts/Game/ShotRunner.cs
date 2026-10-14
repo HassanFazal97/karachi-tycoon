@@ -73,8 +73,8 @@ namespace KarachiTycoon.Game
             var at = ToScreen(menu.worldBound.center);
             yield return Send(at, false); yield return Send(at, true); yield return Send(at, false);
             bool opened = root.Q(className: "sheet").ClassListContains("open");
-            yield return Send(at, false); yield return Send(at, true); yield return Send(at, false);
-
+            ui.DebugShow("none"); // on phones the open sheet covers the dock; players close it with x or a tap on the street
+            yield return new WaitForSecondsRealtime(0.5f); // let the sheet slide away
             float x0 = gc.Rig.ViewX;
             var from = new Vector2(Screen.width * 0.5f, Screen.height * 0.45f);
             yield return Send(from, false); yield return Send(from, true);

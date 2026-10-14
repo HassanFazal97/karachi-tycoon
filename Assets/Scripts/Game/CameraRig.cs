@@ -13,7 +13,9 @@ namespace KarachiTycoon.Game
     {
         public Camera Cam;
         public float ViewX, ViewWidth = 30;
-        public const float MinX = -20, MaxX = 20, MinWidth = 12, MaxWidth = 50;
+        public const float MinX = -20, MaxX = 20;
+        // Portrait phones frame the cart and queue tall, so they see a narrower slice of the road.
+        public float MinWidth = 12, MaxWidth = 50;
 
         // Screen position (pixels, origin bottom-left) of a tap or click that did not drag.
         public event Action<Vector2> Tapped;
@@ -25,7 +27,8 @@ namespace KarachiTycoon.Game
         public void Init(Camera cam, bool phone)
         {
             Cam = cam;
-            ViewWidth = phone ? 24 : 30;
+            if (phone) { ViewWidth = 13; MinWidth = 7; MaxWidth = 26; }
+            else ViewWidth = 30;
             Apply();
         }
 

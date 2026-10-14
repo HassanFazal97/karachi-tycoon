@@ -20,19 +20,19 @@ There is nothing to set up in the scene. `Bootstrap` in `GameController.cs` buil
 |---|---|---|
 | Pan | drag, A/D or arrow keys | drag (with inertia) |
 | Zoom | scroll wheel, +/- | pinch |
-| Pause / speed | Space, 1 2 3 | pause button, speed button cycles 1x/2x/4x |
-| Panels | M Menu, S Supplies, H Staff, B Shop | dock, bottom right |
-| Shout | Q | big red button, bottom left |
+| Pause / speed | Space, 1 2 3 | buttons in the bottom-right corner; the speed button cycles 1x/2x/4x |
+| Panels | M Menu, S Supplies, H Staff, B Shop | dock at the bottom; Store is the coin button at the top |
+| Shout | Q | big red button in the middle of the dock |
 | Pause menu and settings | Esc | gear |
 
 ### Phone and desktop layouts
 
 The UI is UI Toolkit, built in code (`Assets/Scripts/Game/UI`) and styled by `Assets/Resources/UI/Main.uss`. The root element carries `.phone` or `.desktop`:
 
-- **Phone** (landscape): compact top bar, the shout under the left thumb, the panel dock under the right, panels as a half-screen sheet, 40pt+ touch targets, safe-area aware.
-- **Desktop:** fuller top bar with the next azaan, a labelled toolbar with key hints, panels as a side window.
+- **Phone** (portrait, one hand): a two-row top bar (cash, clock, Store and settings; then the act goal and stars), the street framed tall around the cart, a bottom dock with "Aao bhai" in the middle and two panels either side, speed in the corner, panels as half-height bottom sheets, 44pt touch targets, safe-area aware. Phones are locked to portrait.
+- **Desktop / Steam** (landscape): fuller top bar with the next azaan, a labelled toolbar with key hints, panels as a side window.
 
-Phones get the phone layout automatically. To preview it in the editor, set the Game view to a phone resolution (for example 844x390) and choose Layout: Phone in the pause menu (gear or Esc).
+Phones get the phone layout automatically. To preview it in the editor, set the Game view to a portrait phone resolution (for example 390x844) and choose Layout: Phone in the pause menu (gear or Esc).
 
 ## Layout
 
