@@ -19,6 +19,7 @@ namespace KarachiTycoon.Game
             public Material FillMat;
             public TextMesh Bubble;
             public float BubbleT, Phase;
+            public bool OrderBubble;
             public Vector3 Last;
         }
 
@@ -101,6 +102,10 @@ namespace KarachiTycoon.Game
         void OnBubble(BubbleEvent e)
         {
             if (e.Served && e.Mood == 0) return;
+            // Crowded queues: only the first few customers announce their order, and neighbours'
+            // bubbles sit at different heights so the words never pile up on each other.
+            int place = sim.Queue().IndexOf(e.C);
+            if (e.Text == null && !e.Served && place >= 1) return;
             var p = Ensure(e.C);
             if (p.Bubble == null)
             {
@@ -112,8 +117,15 @@ namespace KarachiTycoon.Game
             }
             p.Bubble.text = e.Text ?? (e.Served ? (e.Mood > 0 ? "Wah!" : "Hmm...") : sim.Dish[e.Dish].En);
             p.Bubble.color = e.Mood > 0 ? Hex("#F2D24A") : e.Mood < 0 ? Hex("#FF8A7A") : Color.white;
+            p.Bubble.transform.localPosition = new Vector3(0, 2.6f + (place >= 0 ? place % 3 : e.C.Id % 3) * 0.42f, 0);
             p.Bubble.gameObject.SetActive(true);
-            p.BubbleT = e.Text != null ? 2.6f : 2f;
+            // Orders flash briefly; complaints and reactions stay a little longer.
+            p.BubbleT = e.Text != null ? 2.6f : e.Served ? 1.6f : 1.1f;
+            // Only one order bubble at a time: a new order clears the previous one.
+            if (e.Text == null && !e.Served)
+                foreach (var o in people.Values)
+                    if (o != p && o.Bubble != null && o.Bubble.gameObject.activeSelf && o.OrderBubble) o.Bubble.gameObject.SetActive(false);
+            p.OrderBubble = e.Text == null && !e.Served;
         }
 
         float[] NearestTable(float x, float z)

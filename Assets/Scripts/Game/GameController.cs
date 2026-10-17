@@ -88,6 +88,13 @@ namespace KarachiTycoon.Game
             Sim.StaffChanged += () => Street.RefreshStage(Sim);
             Sim.StageChanged += () => Street.RefreshStage(Sim);
             Sim.Shouted += () => Toast("\"Aao bhai, garma garam!\" People nearby turn to look.", "good");
+            Sim.UpgradeBought += id => { Street.RefreshStage(Sim); Analytics.Event("upgrade_buy", ("upgrade", id), ("day", Sim.S.Day)); };
+            Sim.GoalDone += g =>
+            {
+                // Goal coins are silver coins: they live in the wallet with the bought ones.
+                if (g.Coins > 0) { Wallet.Coins += g.Coins; ApplyWallet(); SaveWallet(); }
+                Analytics.Event("goal_done", ("goal", g.Id), ("day", Sim.S.Day), ("minute", (int)Sim.S.Minute));
+            };
             Sim.DayEnded += l => Analytics.Event("day_end", ("day", l.Day), ("net", l.Net), ("served", l.Served), ("walkouts", l.Walkouts), ("refused", l.Refused));
             Sim.ActDone += n => Analytics.Event("act_done", ("act", n), ("day", Sim.S.Day));
             Analytics.Event("game_start", ("mode", load ? "continue" : "new"), ("day", Sim.S.Day), ("tutorial", Sim.S.Tutorial ?? "legacy"));
@@ -158,6 +165,9 @@ namespace KarachiTycoon.Game
         public void DoubleTips() => Ads.Rewarded("double_tips", Sim.RewardDoubleTips);
 
         // Interstitials only at this natural break; AdsService decides whether one shows.
+        public bool CanSwapGoal(int i) => i < Sim.S.Goals.Count && !Sim.S.Goals[i].Done && Ads.CanOffer("swap_goal");
+        public void SwapGoal(int i) => Ads.Rewarded("swap_goal", () => { if (Sim.SwapGoal(i)) Analytics.Event("goal_swap", ("index", i)); });
+
         public void NextDay() => Ads.AtBreak("day_end", () => { Sim.NextDay(); Save(); });
 
         public void Buy(Product p) => Store.Purchase(p.Id, ok =>

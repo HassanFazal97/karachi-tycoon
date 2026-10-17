@@ -195,6 +195,24 @@ namespace KarachiTycoon.Game
         void ShopSheet()
         {
             var s = sim.S; var b = gc.Data.Balance;
+            Add(Text("Thela upgrades", "section-title"));
+            foreach (var u in gc.Data.Upgrades)
+            {
+                var id = u.Id;
+                var card = Div("card", "upgrade-card");
+                Add(card);
+                card.Add(Div("row").With(Text(u.En, "h2", "grow"), Text(Rs(u.Cost), "chip", "chip-plain")));
+                card.Add(Text(u.Note, "muted", "small"));
+                var buy = Btn($"Buy · {Rs(u.Cost)}", () => sim.BuyUpgrade(id), "btn-primary", "wide");
+                buy.name = "upgrade-" + id;
+                var owned = Text("On your thela", "chip", "chip-good");
+                card.With(buy, owned);
+                sheetBind.Visible(buy, () => !sim.Owns(id));
+                sheetBind.Visible(owned, () => sim.Owns(id));
+                sheetBind.Enabled(buy, () => s.Cash >= u.Cost);
+                sheetBind.Class(card, "hired", () => sim.Owns(id));
+            }
+            Add(Text("Bigger plans", "section-title"));
             var dh = b.Stages["dhaba"];
             var dhaba = Div("card");
             Add(dhaba);

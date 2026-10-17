@@ -46,11 +46,22 @@ namespace KarachiTycoon.Game
             var ui = gc.GetComponent<GameUi>();
             if (Arg("-kt-scenario") == "tutorial") { yield return Tutorial(gc, ui); Application.Quit(); yield break; }
             gc.StartGame(false, 0, "pota");
+            // Two upgrades so they show on the thela, and a stamp the first time a daily goal completes.
+            gc.Sim.BuyUpgrade("stools"); gc.Sim.BuyUpgrade("tubelight");
+            gc.Sim.GoalDone += _ => stampDue = true;
             yield return Advance(gc, 1060);
             gc.Toast("Uncle Rasheed: \"Chai mein elaichi kam hai, beta. Dada ki tarah banao.\"", "uncle");
             gc.Toast("Almost out of Milk. Buy more in Supplies.", "warn");
             yield return new WaitForSecondsRealtime(0.6f);
             yield return Shot("02_hud");
+            var uiRoot = ui.GetComponentInChildren<UIDocument>().rootVisualElement;
+            if (uiRoot.Q("top-goals") != null) { yield return Click(uiRoot, uiRoot.Q("top-goals")); yield return new WaitForSecondsRealtime(0.4f); yield return Shot("02b_goals"); yield return Click(uiRoot, uiRoot.Q("top-goals")); }
+            // The thela up close, with its upgrades, in the evening light.
+            float vx = gc.Rig.ViewX, vw = gc.Rig.ViewWidth;
+            gc.Rig.ViewX = gc.Data.District.Pitch.X; gc.Rig.ViewWidth = gc.Rig.MinWidth;
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return Shot("06_thela");
+            gc.Rig.ViewX = vx; gc.Rig.ViewWidth = vw;
             yield return InputTest(gc, ui);
             foreach (var tab in new[] { "Menu", "Supplies", "Staff", "Shop", "Store", "settings", "act1" })
             {
@@ -153,12 +164,15 @@ namespace KarachiTycoon.Game
         }
 
         // Runs the simulation quickly up to a game minute (or the end of the day), a chunk per frame.
+        bool stampDue, stampShot;
+
         IEnumerator Advance(GameController gc, float minute)
         {
             while (!gc.Sim.S.DayOver && gc.Sim.S.Minute < minute)
             {
                 for (int i = 0; i < 40 && !gc.Sim.S.DayOver; i++) gc.Sim.Tick(0.5f);
                 yield return null;
+                if (stampDue && !stampShot) { stampShot = true; yield return new WaitForSecondsRealtime(0.35f); yield return Shot("05_goal_stamp"); }
             }
         }
 

@@ -137,7 +137,8 @@ namespace KarachiTycoon.Game
 
         public void Do(Action a) => updates.Add(a);
 
-        public void Update() { foreach (var u in updates) u(); }
+        // Index loop: a binding may add more bindings while running.
+        public void Update() { for (int i = 0; i < updates.Count; i++) updates[i](); }
         public void Clear() => updates.Clear();
     }
 }

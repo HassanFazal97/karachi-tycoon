@@ -73,6 +73,15 @@ New players get Uncle Rasheed's guided first day (upgrade plan, "The first ten m
 
 The test build plays the whole tutorial by itself: add `-kt-scenario tutorial` to the `ShotRunner` command below.
 
+## Goals, upgrades, streaks and feedback (M3)
+
+- **Aaj ka kaam:** three daily goals from `Resources/Data/goals.json` (serve N of a dish, N customers, N before Zuhr, no walkouts in Shaam, keep Uncle happy, tips, a Rush streak, takings). Targets grow over the first week. Each pays cash at once (on the hisaab as "Aaj ka kaam rewards") and silver coins (into the wallet). One goal a day can be swapped with a rewarded ad. Desktop shows the goals card under the top bar; phones open it from the target button in the top row. None on the guided first day.
+- **Thela upgrades** (`Resources/Data/upgrades.json`, bought in the Shop, which now unlocks on day 3): plastic stools (patience), a bigger kettle (chai cooks faster), tube lights (more night customers), a truck-art signboard (more people stop) and a second tawa (faster bun kabab). Each one appears on the cart.
+- **Rush streak:** customers served in a row without a walkout. Tips rise by up to half; one walkout resets it. A pill shows it from x5, and a ding rises every 5.
+- **Feedback:** "+Rs" coins fly from each served customer into the galla, the galla bumps, a SHABASH! stamp thumps down when a goal is done, and sounds play for the stamp, upgrades and streaks.
+- **Readable crowds:** only the customer at the front calls out an order, one order bubble at a time, and complaints sit at staggered heights.
+- **Analytics:** `goal_done`, `goal_swap`, `upgrade_buy`.
+
 ## Ads and purchases
 
 Ads live in `Assets/Scripts/Game/Ads` (design doc §22):
@@ -106,7 +115,7 @@ Analytics events (`session_start`, `game_start`, `panel_open`, `day_end`, `act_d
 
 ## Next steps
 
-See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, portrait phone and landscape desktop layouts, touch camera, audio, analytics hooks), the ads refactor, and M2 (the guided first day). Next: M3, daily goals, visible upgrades and feedback.
+See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, portrait phone and landscape desktop layouts, touch camera, audio, analytics hooks), the ads refactor, M2 (the guided first day) and M3 (daily goals, thela upgrades, Rush streaks, feedback). Balance with the sensible-player run: Act 1 on day 3, Act 2 late on day 7 (goal rewards and streak tips bring it about 20 game-hours earlier than before).
 
 - Set up URP with bloom for the tube lights and sodium lamps.
 - Swap the primitive people and buildings for low-poly models (art style guide in the design doc).

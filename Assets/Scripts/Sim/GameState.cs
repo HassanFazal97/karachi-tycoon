@@ -11,6 +11,15 @@ namespace KarachiTycoon.Sim
 
     public class Note { public string Who, Text; }
 
+    // One of the day's three "Aaj ka kaam" goals.
+    public class DailyGoal
+    {
+        public string Id, Text, Type, Dish, Slot;
+        public float Until;
+        public int Target, Progress, Reward, Coins;
+        public bool Done, Failed;
+    }
+
     public class Ledger
     {
         public int Day; public string Weekday;
@@ -26,6 +35,9 @@ namespace KarachiTycoon.Sim
         public List<Note> Notes = new();
         // Act 1 safety net: what Uncle Rasheed lent so the galla still covers tomorrow's stock.
         public int Loan;
+        // Rush streak: customers served in a row without a walkout. Raises tips.
+        public int Streak, BestStreak;
+        public int GoalRewards, Upgrades;
     }
 
     public class GameState
@@ -56,6 +68,8 @@ namespace KarachiTycoon.Sim
         public string Tutorial;
         // One-time hints and unlock explainers already shown.
         public List<string> Seen = new();
+        public List<DailyGoal> Goals = new();
+        public List<string> Owned = new();   // thela upgrades bought
         // Behaviour, for gentle reminders ("never shouted by day 3").
         public int Shouts, PriceChanges;
 

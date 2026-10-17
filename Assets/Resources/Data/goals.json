@@ -1,0 +1,14 @@
+[
+  { "id": "serve_chai", "text": "Serve {n} chai", "type": "dish", "dish": "chai", "min": 30, "max": 70, "reward": 800, "coins": 5 },
+  { "id": "serve_bun", "text": "Serve {n} bun kababs", "type": "dish", "dish": "bun_kabab", "min": 20, "max": 50, "reward": 1000, "coins": 5 },
+  { "id": "serve_samosa", "text": "Serve {n} samosa plates", "type": "dish", "dish": "samosa", "min": 10, "max": 30, "reward": 900, "coins": 5 },
+  { "id": "serve_dahi", "text": "Serve {n} dahi baray", "type": "dish", "dish": "dahi_baray", "min": 10, "max": 25, "reward": 1000, "coins": 6 },
+  { "id": "serve_nihari", "text": "Serve {n} plates of nihari", "type": "dish", "dish": "nihari", "min": 10, "max": 30, "reward": 1500, "coins": 8 },
+  { "id": "customers", "text": "Serve {n} customers", "type": "served", "min": 70, "max": 160, "reward": 1200, "coins": 6 },
+  { "id": "nashta", "text": "Serve {n} customers before Zuhr", "type": "served_before", "until": 780, "min": 20, "max": 50, "reward": 1000, "coins": 6 },
+  { "id": "calm_shaam", "text": "No walkouts during Shaam", "type": "no_walkouts", "slot": "evening", "reward": 1500, "coins": 8 },
+  { "id": "uncle", "text": "Keep Uncle Rasheed happy", "type": "uncle_happy", "reward": 800, "coins": 5 },
+  { "id": "tips", "text": "Earn Rs {n} in tips", "type": "tips", "min": 150, "max": 600, "reward": 900, "coins": 5 },
+  { "id": "streak", "text": "Reach a Rush streak of {n}", "type": "streak", "min": 10, "max": 25, "reward": 1200, "coins": 7 },
+  { "id": "takings", "text": "Take in Rs {n} today", "type": "revenue", "min": 15000, "max": 60000, "reward": 1500, "coins": 8 }
+]

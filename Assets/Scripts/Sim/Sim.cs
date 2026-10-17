@@ -23,7 +23,7 @@ namespace KarachiTycoon.Sim
 
     public class Cook { public Customer Order; }
 
-    public class BubbleEvent { public Customer C; public string Text, Dish, Key; public int Mood; public bool Served; }
+    public class BubbleEvent { public Customer C; public string Text, Dish, Key; public int Mood, Bill; public bool Served; }
 
     public class Notice { public string Kind, Key, Who, Text, Dish, Ing; public int Level; }
 
@@ -67,6 +67,9 @@ namespace KarachiTycoon.Sim
         public event Action<int> DayStarted;
         public event Action<bool> PowerChanged;
         public event Action Cleared, StaffChanged, StageChanged, Shouted, CashChanged;
+        public event Action<DailyGoal> GoalDone;
+        public event Action<int> StreakChanged;
+        public event Action<string> UpgradeBought;
 
         public Sim(GameData data, Func<double> random = null)
         {
@@ -103,6 +106,107 @@ namespace KarachiTycoon.Sim
                 S.AutoBuy["milk_patti"] = 30;
             }
             StartDay();
+        }
+
+        // ---------- thela upgrades ----------
+        public bool Owns(string upgrade) => S.Owned.Contains(upgrade);
+
+        public float UpgradeMult(string key)
+        {
+            float m = 1;
+            foreach (var id in S.Owned)
+            {
+                var u = D.Upgrades.Find(x => x.Id == id);
+                if (u != null && u.Effect.TryGetValue(key, out var v)) m *= v;
+            }
+            return m;
+        }
+
+        public bool BuyUpgrade(string id)
+        {
+            var u = D.Upgrades.Find(x => x.Id == id);
+            if (u == null || Owns(id)) return false;
+            if (S.Cash < u.Cost) { Noticed?.Invoke(new Notice { Kind = "warn", Key = "noCash" }); return false; }
+            S.Cash -= u.Cost; Today.Upgrades += u.Cost;
+            S.Owned.Add(id);
+            UpgradeBought?.Invoke(id);
+            CashChanged?.Invoke();
+            return true;
+        }
+
+        // ---------- "Aaj ka kaam": three daily goals ----------
+        void NewGoals()
+        {
+            S.Goals.Clear();
+            if (TutorialDay) return;
+            var pool = D.Goals.Where(GoalPossible).ToList();
+            for (int i = 0; i < 3 && pool.Count > 0; i++)
+            {
+                // Prefer a mix: no two goals of the same kind on one day.
+                var pick = Pick(pool);
+                S.Goals.Add(MakeGoal(pick));
+                pool.RemoveAll(g => g.Type == pick.Type);
+            }
+        }
+
+        bool GoalPossible(GoalDef g) =>
+            (g.Dish == null || IsAvailable(g.Dish)) && (g.Type != "uncle_happy" || IsAvailable("chai"));
+
+        DailyGoal MakeGoal(GoalDef g)
+        {
+            // Targets grow over the first week, rounded to friendly numbers.
+            float k = Math.Min(1, (S.Day - 1) / 6f) * (0.75f + R() * 0.25f);
+            int n = (int)Math.Round(g.Min + (g.Max - g.Min) * k);
+            int step = n >= 5000 ? 1000 : n >= 100 ? 10 : 5;
+            n = Math.Max(step, (int)Math.Round(n / (float)step) * step);
+            if (g.Type == "no_walkouts" || g.Type == "uncle_happy") n = 1;
+            return new DailyGoal
+            {
+                Id = g.Id, Type = g.Type, Dish = g.Dish, Slot = g.Slot, Until = g.Until, Target = n,
+                Text = g.Text.Replace("{n}", n.ToString("N0")), Reward = g.Reward, Coins = g.Coins,
+            };
+        }
+
+        // A rewarded-ad swap: replace one unfinished goal with a different one.
+        public bool SwapGoal(int i)
+        {
+            if (i < 0 || i >= S.Goals.Count || S.Goals[i].Done) return false;
+            var taken = S.Goals.Select(g => g.Type).ToHashSet();
+            var pool = D.Goals.Where(g => GoalPossible(g) && !taken.Contains(g.Type)).ToList();
+            if (pool.Count == 0) return false;
+            S.Goals[i] = MakeGoal(Pick(pool));
+            return true;
+        }
+
+        void Progress(string type, int amount, string dish = null)
+        {
+            foreach (var g in S.Goals)
+                if (g.Type == type && (dish == null || g.Dish == dish) && !g.Done && !g.Failed) { g.Progress += amount; Check(g); }
+        }
+
+        void SetProgress(string type, int value)
+        {
+            foreach (var g in S.Goals)
+                if (g.Type == type && !g.Done && !g.Failed && value > g.Progress) { g.Progress = value; Check(g); }
+        }
+
+        void TimeGoals()
+        {
+            foreach (var g in S.Goals)
+            {
+                if (g.Done || g.Failed) continue;
+                if (g.Type == "served_before" && S.Minute >= g.Until) g.Failed = true;
+                if (g.Type == "no_walkouts" && Array.FindIndex(SlotEnds, x => x.id == Slot) > Array.FindIndex(SlotEnds, x => x.id == g.Slot)) { g.Progress = 1; Check(g); }
+            }
+        }
+
+        void Check(DailyGoal g)
+        {
+            if (g.Done || g.Progress < g.Target) return;
+            g.Done = true; g.Progress = g.Target;
+            S.Cash += g.Reward; Today.GoalRewards += g.Reward;
+            GoalDone?.Invoke(g);
+            CashChanged?.Invoke();
         }
 
         // ---------- guided first day ----------
@@ -170,7 +274,7 @@ namespace KarachiTycoon.Sim
         }
 
         public float PatienceOf(Customer c) =>
-            Arch[c.Arch].Patience * Stage.Patience * (S.Staff["chhotu"] ? StaffDefs["chhotu"].Patience : 1) * (Easy ? 2f : 1);
+            Arch[c.Arch].Patience * Stage.Patience * (S.Staff["chhotu"] ? StaffDefs["chhotu"].Patience : 1) * (Easy ? 2f : 1) * UpgradeMult("patience");
 
         public List<Customer> Queue() => Customers.Where(c => c.State == "queue").ToList();
 
@@ -192,6 +296,7 @@ namespace KarachiTycoon.Sim
             wasOut = false;
             seatTaken = new int[D.District.Seats.Length];
             warned.Clear();
+            if (!resumed) NewGoals();
             Today = new Ledger { Day = S.Day, Weekday = Weekday, FameStart = S.Fame, AuthStart = S.Auth };
             if (!resumed) AutoRestock();
             Snapshot = JsonConvert.SerializeObject(S);
@@ -244,7 +349,7 @@ namespace KarachiTycoon.Sim
                 if (S.Cash < floor) { t.Loan = floor - S.Cash; S.Cash = floor; }
             }
             t.Expenses = t.StockBought + t.FatCost + t.Wages + t.Rent + (int)Math.Round(t.Fuel);
-            t.Net = t.Revenue + t.Tips - t.Expenses - t.Setup;
+            t.Net = t.Revenue + t.Tips + t.GoalRewards - t.Expenses - t.Setup - t.Upgrades;
             t.FameEnd = S.Fame; t.AuthEnd = S.Auth; t.CashEnd = S.Cash;
             S.History.Add(new DayHistory { Day = t.Day, Revenue = t.Revenue, Net = t.Net, Served = t.Served, Fame = S.Fame, Auth = S.Auth });
             if (S.History.Count > 60) S.History.RemoveAt(0);
@@ -362,6 +467,7 @@ namespace KarachiTycoon.Sim
             }
             if (outNow && S.Generator) Today.Fuel += D.Balance.Generator.FuelPerHour * dt / 60f;
             Spawn(dt);
+            TimeGoals();
             for (int i = 0; i < uncleTimes.Count; i++)
                 if (uncleTimes[i] > 0 && S.Minute >= uncleTimes[i]) { uncleTimes[i] = -1; SpawnUncle(); }
             UpdateCustomers(dt);
@@ -371,6 +477,7 @@ namespace KarachiTycoon.Sim
         float FootfallRate()
         {
             float r = D.Balance.Footfall[Slot];
+            if (Slot == "night") r *= UpgradeMult("night");
             if (Weekday == "Sat" || Weekday == "Sun") r *= 1.15f;
             if (Weekday == "Fri" && S.Minute > 780 && S.Minute < 855) r *= 0.3f; // Jumma
             if (PowerOut) r *= 0.8f;
@@ -439,7 +546,7 @@ namespace KarachiTycoon.Sim
             var order = ChooseOrder(a, null, out float weight);
             if (order != null)
             {
-                float p = b.VisitBase * (0.55f + 0.3f * S.Fame) * Clamp(weight / 1.2f, 0.5f, 1.5f) * st.Visit;
+                float p = b.VisitBase * (0.55f + 0.3f * S.Fame) * Clamp(weight / 1.2f, 0.5f, 1.5f) * st.Visit * UpgradeMult("visit");
                 if (a.Id == "family") p *= st.FamilyVisit;
                 if (S.Minute < S.AaoUntil) p *= b.Aao.Mult;
                 if (PowerOut && !S.Generator) p *= 0.8f;
@@ -532,7 +639,7 @@ namespace KarachiTycoon.Sim
                     if (S.Stock[kv.Key] < 3 && warned.Add(kv.Key)) Noticed?.Invoke(new Notice { Kind = "warn", Key = "lowStock", Ing = kv.Key });
                 }
             c.Taken = true;
-            float work = c.Order.Sum(it => Dish[it.Dish].Cook * (float)Math.Pow(it.Qty, 0.7) * (1 - 0.04f * MasteryLevel(it.Dish)));
+            float work = c.Order.Sum(it => Dish[it.Dish].Cook * UpgradeMult("cook_" + it.Dish) * (float)Math.Pow(it.Qty, 0.7) * (1 - 0.04f * MasteryLevel(it.Dish)));
             if (S.Staff["chhotu"]) work *= StaffDefs["chhotu"].Speed;
             if (PowerOut && !S.Generator) work *= 1.3f;
             c.Work = c.WorkTotal = work;
@@ -580,6 +687,13 @@ namespace KarachiTycoon.Sim
             qual /= n;
             S.Cash += bill; t.Revenue += bill; S.TotalRevenue += bill;
             S.TotalServed += c.Party; t.Served += c.Party;
+            t.Streak++; if (t.Streak > t.BestStreak) t.BestStreak = t.Streak;
+            StreakChanged?.Invoke(t.Streak);
+            foreach (var it in c.Order) Progress("dish", it.Qty, it.Dish);
+            Progress("served", c.Party);
+            if (S.Minute < 780) Progress("served_before", c.Party);
+            Progress("revenue", bill);
+            SetProgress("streak", t.Streak);
             float expectation = 50 + 6 * S.Fame;
             float sat = Clamp((qual - expectation - c.Waited / PatienceOf(c) * 22 + (S.Auth - 2.5f) * 4 * a.Auth) / 25, -1, 1);
             if (sat > 0) S.Fame += 0.003f * sat * a.FameMult * (1 - S.Fame / 5.5f) * (c.Party > 1 ? 1.5f : 1);
@@ -587,9 +701,16 @@ namespace KarachiTycoon.Sim
             S.Fame = Clamp(S.Fame, 0, 5);
             c.Sat = sat;
             // Happy customers leave a little extra. A rewarded ad can double the night's tips (design doc §22).
-            if (sat > 0.5f) { int tip = (int)Math.Round(bill * 0.08f / 10f) * 10; t.Tips += tip; S.Cash += tip; }
-            if (c.Uncle) UncleSpeaks(c, sat);
-            else Bubble?.Invoke(new BubbleEvent { C = c, Mood = sat > 0.15f ? 1 : sat < -0.15f ? -1 : 0, Served = true });
+            // A Rush streak (served in a row, nobody walking off) adds up to half again on the tip.
+            if (sat > 0.5f)
+            {
+                int tip = (int)Math.Round(bill * 0.08f * (1 + 0.02f * Math.Min(t.Streak, 25)) / 10f) * 10;
+                t.Tips += tip; S.Cash += tip;
+                Progress("tips", tip);
+            }
+            // Uncle is happy when he doesn't complain about the wait (the same rule as his words in UncleSpeaks).
+            if (c.Uncle) { if (c.Waited <= PatienceOf(c) * 0.7f) Progress("uncle_happy", 1); UncleSpeaks(c, sat); }
+            else Bubble?.Invoke(new BubbleEvent { C = c, Mood = sat > 0.15f ? 1 : sat < -0.15f ? -1 : 0, Served = true, Bill = bill });
             CashChanged?.Invoke();
             var seats = FreeSeats();
             if (S.Stage == "dhaba" && seats.Count >= c.Party)
@@ -654,6 +775,8 @@ namespace KarachiTycoon.Sim
                         if (c.Waited > PatienceOf(c))
                         {
                             Today.Walkouts++; S.Fame = Clamp(S.Fame - 0.004f, 0, 5);
+                            Today.Streak = 0; StreakChanged?.Invoke(0);
+                            foreach (var g in S.Goals) if (g.Type == "no_walkouts" && !g.Done && Slot == g.Slot) g.Failed = true;
                             Pending.Remove(c);
                             ReturnStock(c);
                             Bubble?.Invoke(new BubbleEvent { C = c, Text = c.Uncle ? "Bohat dair, beta." : "Bohat dair!", Mood = -1, Key = "walkout" });

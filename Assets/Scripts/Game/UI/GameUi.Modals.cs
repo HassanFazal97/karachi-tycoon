@@ -49,12 +49,14 @@ namespace KarachiTycoon.Game
             foreach (var kv in l.Sales) income.Add(Line($"{sim.Dish[kv.Key].En} × {kv.Value.Qty}", Rs(kv.Value.Rs)));
             var tips = Line("Tips from happy customers", Rs(l.Tips));
             income.Add(tips);
+            if (l.GoalRewards > 0) income.Add(Line("Aaj ka kaam rewards", Rs(l.GoalRewards)));
             var expenses = Div("khata-col").With(Text("Kharcha · expenses", "khata-head2"));
             expenses.Add(Line("Stock", Rs(l.StockBought)));
             expenses.Add(Line(sim.S.Fat == "ghee" ? "Desi ghee" : "Cooking oil", Rs(l.FatCost)));
             expenses.Add(Line("Wages", Rs(l.Wages)));
             expenses.Add(Line("Rent", Rs(l.Rent)));
             if (l.Setup > 0) expenses.Add(Line("Setup", Rs(l.Setup)));
+            if (l.Upgrades > 0) expenses.Add(Line("Thela upgrades", Rs(l.Upgrades)));
             cols.With(income, expenses);
 
             var net = Text("", "khata-net");
@@ -74,10 +76,19 @@ namespace KarachiTycoon.Game
 
             var chips = Div("row", "wrap", "khata-chips");
             chips.Add(Text($"{l.Served} served", "chip", "chip-good"));
+            if (l.BestStreak >= 5) chips.Add(Text($"Best Rush ×{l.BestStreak}", "chip", "chip-info"));
             if (l.Walkouts > 0) chips.Add(Text($"{l.Walkouts} walked off waiting", "chip", "chip-bad"));
             if (l.Refused > 0) chips.Add(Text($"{l.Refused} said too expensive", "chip", "chip-warn"));
             if (l.QueueFull > 0) chips.Add(Text($"{l.QueueFull} saw a long line", "chip", "chip-warn"));
             scroll.Add(chips);
+            if (sim.S.Goals.Count > 0)
+            {
+                var goals = Div("khata-goals").With(Text("Aaj ka kaam", "khata-head2"));
+                foreach (var g in sim.S.Goals)
+                    goals.Add(Div("row", "khata-goal").With(new Icon(g.Done ? "check" : "close").Cls("goal-mark"), Text(g.Text, "khata-label", "grow"),
+                        g.Done ? Text("SHABASH", "mini-stamp") : Text("missed", "muted", "small")));
+                scroll.Add(goals);
+            }
             if (l.Missed.Count > 0) scroll.Add(Text("Sold out: " + string.Join(", ", l.Missed.Select(kv => $"{kv.Value} {sim.Dish[kv.Key].En}")), "khata-note"));
             if (l.WastageRs > 0) scroll.Add(Text($"Spoiled overnight: {Rs(l.WastageRs)}", "khata-note"));
             scroll.Add(Text($"Shohrat {l.FameEnd - l.FameStart:+0.00;-0.00} · Asli-pan {l.AuthEnd - l.AuthStart:+0.00;-0.00}", "khata-note"));

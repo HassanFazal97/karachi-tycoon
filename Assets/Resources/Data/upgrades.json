@@ -1,0 +1,7 @@
+[
+  { "id": "stools", "en": "Plastic stools", "note": "People wait longer when they can sit down.", "cost": 5000, "effect": { "patience": 1.2 } },
+  { "id": "kettle", "en": "Bigger kettle", "note": "Chai brews a quarter faster.", "cost": 7000, "effect": { "cook_chai": 0.75 } },
+  { "id": "tubelight", "en": "Tube lights", "note": "A bright cart pulls in the night crowd.", "cost": 9000, "effect": { "night": 1.15 } },
+  { "id": "sign", "en": "Truck-art signboard", "note": "More people stop to look at a painted thela.", "cost": 12000, "effect": { "visit": 1.1 } },
+  { "id": "tawa2", "en": "Second tawa", "note": "Two bun kababs on the fire at once.", "cost": 15000, "effect": { "cook_bun_kabab": 0.7 } }
+]

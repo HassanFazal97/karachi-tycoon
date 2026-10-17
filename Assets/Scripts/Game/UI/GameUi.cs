@@ -98,6 +98,9 @@ namespace KarachiTycoon.Game
             sim.Unlocked += _ => RefreshSheet();
             sim.StaffChanged += RefreshSheet;
             sim.StageChanged += RefreshSheet;
+            sim.UpgradeBought += _ => RefreshSheet();
+            sim.GoalDone += OnGoalDone;
+            sim.Bubble += OnServeBubble;
             Rebuild();
         }
 
@@ -107,7 +110,7 @@ namespace KarachiTycoon.Game
             root.EnableInClassList("phone", phone);
             root.EnableInClassList("desktop", !phone);
             hud.Clear(); sheetLayer.Clear(); toastLayer.Clear(); modalLayer.Clear();
-            hudBind.Clear(); sheetBind.Clear(); modalBind.Clear();
+            hudBind.Clear(); sheetBind.Clear(); modalBind.Clear(); goalsBind.Clear();
             modal = null; sheetOpen = null;
             HideCoach();
             toasts.Clear();
@@ -122,6 +125,8 @@ namespace KarachiTycoon.Game
             if (root == null) return;
             if (Screen.safeArea != lastSafeArea && root.layout.width > 0) ApplySafeArea();
             hudBind.Update(); sheetBind.Update(); modalBind.Update();
+            if (goalsDirty && goalsRows != null) FillGoals();
+            goalsBind.Update();
             UpdateToasts();
             UpdateAdOverlay();
             UpdateCoach();
@@ -352,7 +357,8 @@ namespace KarachiTycoon.Game
 
             // Load shedding banner.
             var banner = Div("banner").With(new Icon("bolt").Cls("banner-icon"), Text("", "banner-text")).Ghost(true);
-            hud.Add(Div("banner-row").Ghost().With(banner));
+            var bannerRow = Div("banner-row").Ghost().With(banner);
+            hud.Add(bannerRow);
             hudBind.Visible(banner, () => sim.PowerOut);
             hudBind.Text(banner.Q<Label>(), () => sim.S.Generator ? "Load shedding · generator running" : "Load shedding · no power, service is slower");
 
@@ -400,6 +406,7 @@ namespace KarachiTycoon.Game
                 var save = IconBtn("save", "Save", () => { gc.Save(); gc.Toast("Saved. Loading resumes from the start of today.", "tip"); }, "dock-btn");
                 bottom.With(Div("toolbar").With(dock, Div("toolbar-sep"), Div("col", "aao-zone").With(aao), adShout, Div("toolbar-sep"), save));
             }
+            BuildFeedback(bannerRow, row1);
         }
 
         static string SlotName(string slot) => slot switch { "breakfast" => "Nashta", "day" => "Dopahar", "evening" => "Shaam", _ => "Raat" };

@@ -12,7 +12,8 @@ namespace KarachiTycoon.Game
     {
         const int Rate = 44100;
         AudioSource ambient, hum, sfx;
-        AudioClip click, coin, bad, bell, chime, dayEnd, fanfare;
+        AudioClip click, coin, bad, bell, chime, dayEnd, fanfare, stamp, drawer;
+        AudioClip[] streak;
         Sim.Sim sim;
         float[] prayers;
         float lastCoin, lastBad;
@@ -31,6 +32,14 @@ namespace KarachiTycoon.Game
             chime = Arpeggio(new[] { 784f, 988, 1175 }, 0.09f, 0.6f);
             dayEnd = Arpeggio(new[] { 523f, 659, 784, 1046 }, 0.12f, 0.9f);
             fanfare = Arpeggio(new[] { 523f, 659, 784, 1046, 784, 1046, 1318 }, 0.13f, 1.4f);
+            // A rubber stamp: a dull thump, then a bright two-note "shabash".
+            stamp = Tone(0.9f, t => (Sine(t, 70) * Decay(t, 22) * 1.2f + (Sine(t - 0.12f, 880) + Sine(t - 0.12f, 1760) * 0.3f) * Decay(t - 0.12f, 6) * 0.5f * Step(t - 0.12f)
+                + Sine(t - 0.24f, 1175) * Decay(t - 0.24f, 5) * 0.45f * Step(t - 0.24f)));
+            // The galla drawer for upgrades: a wooden knock and a jingle of coins.
+            drawer = Tone(0.8f, t => Sine(t, 110) * Decay(t, 18) + (Sine(t - 0.1f, 2093) + Sine(t - 0.16f, 2637) + Sine(t - 0.22f, 3136)) * Decay(t - 0.1f, 9) * 0.25f * Step(t - 0.1f));
+            // Rush streak dings rise every five customers.
+            streak = new AudioClip[6];
+            for (int i = 0; i < streak.Length; i++) { float f = 660 * Mathf.Pow(1.122f, i * 2); streak[i] = Tone(0.35f, t => (Sine(t, f) + Sine(t, f * 2) * 0.3f) * Decay(t, 9) * 0.6f); }
             UiKit.Clicked += Click;
         }
 
@@ -45,6 +54,9 @@ namespace KarachiTycoon.Game
             sim.Unlocked += _ => Play(chime, 0.8f);
             sim.ActDone += _ => Play(fanfare, 0.9f);
             sim.Shouted += () => Play(bell, 0.7f);
+            sim.GoalDone += _ => Play(stamp, 0.9f);
+            sim.UpgradeBought += _ => Play(drawer, 0.8f);
+            sim.StreakChanged += n => { if (n >= 5 && n % 5 == 0) Play(streak[Mathf.Min(n / 5 - 1, streak.Length - 1)], 0.6f); };
             ambient.Play(); hum.Play();
         }
 

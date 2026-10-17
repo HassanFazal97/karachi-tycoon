@@ -76,7 +76,7 @@ namespace KarachiTycoon.Game
                 case "Menu": return at >= StepIndex("menu_open");
                 case "Supplies": return at >= StepIndex("supplies_open");
                 case "Staff": return s.Day >= 2 || s.Staff.Values.Any(v => v);
-                case "Shop": return s.Act1Done || s.Stage != "cart";
+                case "Shop": return s.Day >= 3 || s.Act1Done || s.Stage != "cart"; // thela upgrades first, the dhaba after Act 1
                 case "Store": return !Active;
                 case "fat": return s.Stage != "cart";
                 default: return true;

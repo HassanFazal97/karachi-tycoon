@@ -110,6 +110,21 @@ namespace KarachiTycoon.Sim
         public Dictionary<string, List<string>> UncleLines = new();
     }
 
+    public class UpgradeDef
+    {
+        public string Id, En, Note;
+        public int Cost;
+        // Multipliers: "patience", "visit", "night" (night footfall), "cook_<dish>" (cooking time).
+        public Dictionary<string, float> Effect = new();
+    }
+
+    public class GoalDef
+    {
+        public string Id, Text, Type, Dish, Slot;
+        public float Until;
+        public int Min, Max, Reward, Coins;
+    }
+
     public class GameData
     {
         public List<DishDef> Dishes;
@@ -118,8 +133,10 @@ namespace KarachiTycoon.Sim
         public List<StaffDef> Staff;
         public BalanceDef Balance;
         public DistrictDef District;
+        public List<UpgradeDef> Upgrades = new();
+        public List<GoalDef> Goals = new();
 
-        // Reads the six data files through a loader (Resources in Unity, the file system in tools).
+        // Reads the data files through a loader (Resources in Unity, the file system in tools).
         public static GameData Load(System.Func<string, string> readText)
         {
             T Read<T>(string name) => JsonConvert.DeserializeObject<T>(readText(name));
@@ -131,6 +148,8 @@ namespace KarachiTycoon.Sim
                 Staff = Read<List<StaffDef>>("staff"),
                 Balance = Read<BalanceDef>("balance"),
                 District = Read<DistrictDef>("burns_road"),
+                Upgrades = Read<List<UpgradeDef>>("upgrades"),
+                Goals = Read<List<GoalDef>>("goals"),
             };
         }
     }

@@ -309,6 +309,52 @@
 .kitaab-scroll { flex-shrink: 1; margin-top: 8px; }
 .kitaab-tip { border-left-width: 3px; border-color: var(--red); padding: 4px 0 4px 10px; margin-bottom: 10px; }
 
+/* ---------- feedback: goals, streak, coin pops, stamps ---------- */
+.goals-card { position: absolute; top: 102px; right: 14px; width: 330px; padding: 8px 10px; border-radius: 12px; background-color: rgba(42, 29, 21, 0.92); border-width: 1px; border-color: rgba(226, 194, 126, 0.45); }
+.goals-head { margin-bottom: 4px; }
+.goals-icon { width: 14px; height: 14px; color: var(--gold); margin-right: 6px; }
+.goals-count { font-size: 12px; color: var(--gold); -unity-font-style: bold; }
+.goal-row { flex-direction: row; align-items: center; padding: 4px 0; border-top-width: 1px; border-color: rgba(226, 194, 126, 0.15); }
+.goal-mark { width: 18px; height: 18px; color: var(--gold); margin-right: 8px; flex-shrink: 0; }
+.goal-row.done .goal-mark { color: #6CC08B; }
+.goal-row.failed { opacity: 0.5; }
+.goal-name { font-size: 13px; color: var(--paper); }
+.goal-row.done .goal-name { color: #A9D9B8; }
+.goal-mini { height: 4px; margin-top: 3px; flex-grow: 0; }
+.goal-row.done .bar-fill { background-color: #6CC08B; }
+.goal-prog { font-size: 12px; color: var(--gold); margin-left: 8px; -unity-font-style: bold; flex-shrink: 0; }
+.goal-swap { width: 30px; height: 26px; padding: 0; margin-left: 6px; background-color: #1F5F8B; border-color: #9FC8E8; }
+.goal-swap .icon { width: 14px; height: 14px; }
+.goals-btn { flex-direction: row; width: auto; padding: 0 8px; }
+.goals-btn .icon { width: 18px; height: 18px; margin-right: 4px; }
+.goals-btn-count { font-size: 13px; color: var(--paper); -unity-font-style: bold; }
+.goals-btn.on .goals-btn-count { color: var(--dark); }
+
+.streak-pill { flex-direction: row; align-items: center; padding: 4px 12px; border-radius: 14px; margin-bottom: 6px; background-color: rgba(200, 32, 47, 0.92); border-width: 1px; border-color: #F2C24A; }
+.streak-pill.hot { background-color: rgba(229, 139, 42, 0.95); scale: 1.08 1.08; }
+.streak-icon { width: 16px; height: 16px; color: #FFE08A; margin-right: 6px; }
+.streak-text { color: #FFFFFF; font-size: 14px; -unity-font-style: bold; }
+
+.money { transition-property: scale, color; transition-duration: 0.12s; }
+.money.bump { scale: 1.12 1.12; color: #FFE08A; }
+
+.coin-pop { position: absolute; font-size: 16px; -unity-font-style: bold; color: #FFE08A; -unity-text-outline-width: 1px; -unity-text-outline-color: #3B2A1E; translate: -50% 0; opacity: 0; transition-property: translate, opacity, scale; transition-duration: 0.35s; }
+.coin-pop.rise { opacity: 1; translate: -50% -26px; }
+.coin-pop.fly { transition-duration: 0.55s; transition-timing-function: ease-in-cubic; opacity: 0.2; scale: 0.7 0.7; }
+
+.stamp-row { position: absolute; left: 0; right: 0; top: 36%; flex-direction: row; justify-content: center; }
+.stamp-fx { align-items: center; padding: 8px 22px; border-width: 4px; border-color: #2B3F8F; border-radius: 10px; background-color: rgba(241, 230, 204, 0.92); rotate: -8deg; scale: 1.8 1.8; opacity: 0; transition-property: scale, opacity; transition-duration: 0.18s, 0.18s; }
+.stamp-fx.in { scale: 1 1; opacity: 1; }
+.stamp-fx.out { opacity: 0; transition-duration: 0.45s; }
+.stamp-word { font-size: 34px; -unity-font-style: bold; color: #2B3F8F; letter-spacing: 3px; }
+.stamp-note { font-size: 13px; color: #2B3F8F; }
+
+.section-title { color: var(--maroon); font-size: 13px; -unity-font-style: bold; letter-spacing: 1px; margin: 4px 2px 8px 2px; }
+.khata-goals { margin-top: 10px; }
+.khata-goal { padding: 2px 0; }
+.khata-goal .goal-mark { color: var(--ink); width: 16px; height: 16px; }
+.mini-stamp { color: var(--ink); border-width: 2px; border-color: var(--ink); border-radius: 4px; padding: 0 6px; font-size: 11px; -unity-font-style: bold; rotate: -6deg; }
+
 /* =========================================================
    PHONE (portrait, ~390x844 points, one hand): two-row top bar, a bottom
    dock with the shout in the middle, speed in the corner, half-height
@@ -330,7 +376,7 @@
 .phone .clock-dial { width: 34px; height: 34px; margin-right: 6px; }
 .phone .clock-time { font-size: 15px; }
 .phone .azaan { display: none; }
-.phone .gear-btn { width: 44px; height: 44px; margin-left: 6px; }
+.phone .gear-btn { width: 40px; height: 44px; margin-left: 4px; }
 .phone .gear-btn.on { background-color: var(--gold); }
 .phone .gear-btn.on .icon { color: var(--dark); }
 .phone .goal { min-width: 0; max-width: none; margin: 6px 0 0 0; flex-direction: column; }
@@ -402,3 +448,10 @@
 .phone .coldopen-card { width: 90%; padding: 22px 18px; }
 .phone .coldopen-icon { width: 96px; height: 96px; }
 .phone .toast-action { min-height: 36px; }
+
+.phone .goals-card { top: 118px; left: 10px; right: 10px; width: auto; }
+.phone .goals-btn { height: 44px; width: auto; padding: 0 6px; margin-left: 4px; }
+.phone .goal-name { font-size: 14px; }
+.phone .goal-swap { width: 40px; height: 36px; }
+.phone .stamp-word { font-size: 30px; }
+.phone .banner-row { flex-direction: column; align-items: center; padding-right: 0; }

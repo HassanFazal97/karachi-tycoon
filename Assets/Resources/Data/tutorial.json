@@ -61,7 +61,7 @@
 
   "unlocks": {
     "Staff": { "title": "Staff", "text": "Chhotu can take orders while you cook. The line moves faster and people wait longer. He costs a daily wage, so hire him when you are busy." },
-    "Shop": { "title": "The Shop", "text": "Your thela has done well. In the Shop you can set up the pavement dhaba, and later buy a generator for load shedding." },
+    "Shop": { "title": "The Shop", "text": "Your thela can do more, beta. The Shop sells upgrades you can see on the cart: stools, a bigger kettle, tube lights, a painted signboard. After Act 1 the pavement dhaba is set up here too." },
     "Store": { "title": "The Store", "text": "Dada's trunk and other extras are in the Store. Nothing in it is needed to finish the game." },
     "fat": { "title": "Desi ghee or oil?", "text": "Now that you run a dhaba, the choice is yours. Ghee tastes better and builds Asli-pan; oil costs less per plate. People notice the difference." }
   },
@@ -77,6 +77,9 @@
     { "title": "Staff", "text": "A chhotu speeds up orders and keeps people patient. At the dhaba a karigar cooks nihari. Wages are paid every night." },
     { "title": "Ghee or oil", "text": "Desi ghee tastes better and builds Asli-pan. Oil is cheaper per plate but people can tell." },
     { "title": "Load shedding", "text": "Power cuts slow the kitchen and thin the street. A generator at the dhaba keeps things running, for the price of its fuel." },
+    { "title": "Aaj ka kaam", "text": "Every day brings three small goals. Each one pays cash and a few silver coins the moment it is done. Tap the goal bar to see them." },
+    { "title": "Rush streak", "text": "Serve customers in a row without anyone walking off and the Rush streak grows. Happy customers tip more during a streak; one walkout resets it." },
+    { "title": "Upgrades", "text": "The Shop sells upgrades for the thela. Each one shows on the cart and helps for good: stools for patience, a bigger kettle for chai, tube lights for the night crowd." },
     { "title": "Act 1", "text": "Serve 300 customers and earn Rs 75,000 to set up the pavement dhaba. In Act 1 the game never ends: Uncle Rasheed lends you enough for tomorrow's stock." }
   ]
 }

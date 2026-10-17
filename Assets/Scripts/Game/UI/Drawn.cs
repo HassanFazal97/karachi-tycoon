@@ -154,6 +154,21 @@ namespace KarachiTycoon.Game
                     Circle(p, P(.3f, .78f), s * .1f); p.Stroke();
                     Circle(p, P(.64f, .78f), s * .1f); p.Stroke();
                     break;
+                case "check":
+                    p.BeginPath(); p.MoveTo(P(.18f, .52f)); p.LineTo(P(.42f, .76f)); p.LineTo(P(.84f, .26f)); p.Stroke();
+                    break;
+                case "circle":
+                    Circle(p, P(.5f, .5f), s * .34f); p.Stroke();
+                    break;
+                case "flame": // Rush streak
+                    p.BeginPath(); p.MoveTo(P(.5f, .06f));
+                    p.BezierCurveTo(P(.78f, .34f), P(.86f, .56f), P(.78f, .74f));
+                    p.BezierCurveTo(P(.7f, .92f), P(.3f, .92f), P(.22f, .74f));
+                    p.BezierCurveTo(P(.14f, .56f), P(.3f, .4f), P(.36f, .3f));
+                    p.BezierCurveTo(P(.4f, .44f), P(.46f, .5f), P(.5f, .52f));
+                    p.BezierCurveTo(P(.56f, .4f), P(.54f, .22f), P(.5f, .06f));
+                    p.ClosePath(); p.Fill();
+                    break;
                 case "target": // goals
                     Circle(p, P(.5f, .5f), s * .38f); p.Stroke();
                     Circle(p, P(.5f, .5f), s * .2f); p.Stroke();

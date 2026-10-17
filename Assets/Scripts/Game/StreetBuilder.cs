@@ -231,6 +231,13 @@ namespace KarachiTycoon.Game
             }
         }
 
+        static Transform Group2(Transform parent, string name)
+        {
+            var g = new GameObject(name).transform; g.SetParent(parent, false);
+            g.gameObject.SetActive(false);
+            return g;
+        }
+
         // The player's thela: wooden cart, truck-art panel, canopy, bulbs, kettle, tawa, karahi, matka.
         void BuildStall(GameState s)
         {
@@ -252,6 +259,28 @@ namespace KarachiTycoon.Game
             var tawa = new GameObject("bun_kabab").transform; tawa.SetParent(t, false); tawa.localPosition = new Vector3(0.2f, 1.05f, 0);
             Cyl(tawa, new Vector3(0, 0.08f, 0), 0.32f, 0.04f, Mat("#1E1C1A", 0.4f, 0.5f), "tawa");
             Items["bun_kabab"] = tawa.gameObject;
+            // Upgrades, shown once bought (RefreshStage).
+            var up = new GameObject("upgrades").transform; up.SetParent(t, false);
+            var stools = Group2(up, "upgrade_stools");
+            for (int i = 0; i < 3; i++)
+            {
+                var sx = -0.9f + i * 0.9f;
+                Cyl(stools, new Vector3(sx, 0.22f, -1.25f), 0.17f, 0.04f, Mat(i % 2 == 0 ? "#C8202F" : "#2B6FA8", 0.4f), "stool_seat");
+                Cyl(stools, new Vector3(sx, 0.1f, -1.25f), 0.13f, 0.2f, Mat(i % 2 == 0 ? "#A81A27" : "#235C8C", 0.4f), "stool_legs");
+            }
+            var bigKettle = Group2(up, "upgrade_kettle");
+            bigKettle.localPosition = new Vector3(-0.6f, 1.05f, 0);
+            Cyl(bigKettle, new Vector3(0, 0.33f, 0), 0.19f, 0.4f, Mat("#D2D0C8", 0.75f, 0.8f), "big_kettle");
+            Cyl(bigKettle, new Vector3(0.22f, 0.42f, 0), 0.03f, 0.18f, Mat("#D2D0C8", 0.75f, 0.8f), "spout").transform.localRotation = Quaternion.Euler(0, 0, -50);
+            var tawa2 = Group2(up, "upgrade_tawa2");
+            Cyl(tawa2, new Vector3(0.2f, 1.13f, 0.32f), 0.26f, 0.04f, Mat("#1E1C1A", 0.4f, 0.5f), "tawa_2");
+            var tube = Group2(up, "upgrade_tubelight");
+            var tg = AddGlow(tube, new Vector3(0, 2.0f, -0.5f), new Vector3(1.6f, 0.05f, 0.05f), "#E8F4F0", 3.2f); tg.Backed = true;
+            var art = Group2(up, "upgrade_sign");
+            string[] truck = { "#C8202F", "#E8C35A", "#2B6FA8", "#3E8E5E", "#E58B2A" };
+            for (int i = 0; i < 10; i++)
+                Box(art, new Vector3(-0.99f + i * 0.22f, 2.42f, -0.62f), new Vector3(0.2f, 0.22f, 0.03f), Mat(truck[i % truck.Length], 0.5f), "truck_art");
+            Box(art, new Vector3(0, 2.56f, -0.62f), new Vector3(2.2f, 0.05f, 0.04f), Mat("#F2D24A", 0.6f, 0.4f), "truck_trim");
             var karahi = new GameObject("samosa").transform; karahi.SetParent(t, false); karahi.localPosition = new Vector3(0.82f, 1.05f, -0.05f);
             Cyl(karahi, new Vector3(0, 0.08f, 0), 0.3f, 0.12f, Mat("#2A2826", 0.4f, 0.4f), "karahi");
             Cyl(karahi, new Vector3(0, 0.15f, 0), 0.26f, 0.01f, Mat("#C88A2A", 0.8f, 0.3f), "oil");
@@ -315,6 +344,14 @@ namespace KarachiTycoon.Game
             var s = sim.S; bool dh = s.Stage == "dhaba";
             Dhaba.SetActive(dh);
             foreach (var kv in Items) kv.Value.SetActive(!sim.IsLocked(kv.Key) || (kv.Key != "nihari" && s.Unlocked[kv.Key]));
+            foreach (var u in sim.D.Upgrades)
+            {
+                var g = Stall.transform.Find("upgrades/upgrade_" + u.Id);
+                if (g != null) g.gameObject.SetActive(sim.Owns(u.Id));
+            }
+            // The bigger kettle replaces the small one.
+            var small = Stall.transform.Find("chai/kettle");
+            if (small != null) small.gameObject.SetActive(!sim.Owns("kettle"));
         }
     }
 }
