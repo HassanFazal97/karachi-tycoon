@@ -13,6 +13,8 @@ namespace KarachiTycoon.Game
         public static float SfxVolume { get => PlayerPrefs.GetFloat("kt_vol_sfx", 0.8f); set => Set("kt_vol_sfx", value); }
         // "auto", "phone" or "desktop".
         public static string Layout { get => PlayerPrefs.GetString("kt_layout", "auto"); set { PlayerPrefs.SetString("kt_layout", value); PlayerPrefs.Save(); Changed?.Invoke(); } }
+        // Turns off post-processing and shadows for slower phones.
+        public static bool BatterySaver { get => PlayerPrefs.GetInt("kt_battery", 0) == 1; set { PlayerPrefs.SetInt("kt_battery", value ? 1 : 0); PlayerPrefs.Save(); Changed?.Invoke(); } }
         public static float UiScale { get => PlayerPrefs.GetFloat("kt_ui_scale", 1f); set => Set("kt_ui_scale", value); }
 
         static void Set(string key, float v) { PlayerPrefs.SetFloat(key, v); PlayerPrefs.Save(); Changed?.Invoke(); }

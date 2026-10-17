@@ -113,7 +113,8 @@ namespace KarachiTycoon.Game
             Cam.orthographicSize = ViewWidth / aspect / 2;
             var target = W(ViewX, 3.2f + ViewWidth * 0.06f, -3.5f);
             var dir = new Vector3(0.22f, 0.6f, -0.77f).normalized;
-            Cam.transform.position = target + dir * 90;
+            // Orthographic, so distance only matters for shadows: close enough to stay inside the shadow distance.
+            Cam.transform.position = target + dir * 45;
             Cam.transform.LookAt(target);
         }
     }

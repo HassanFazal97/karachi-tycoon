@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using KarachiTycoon.Sim;
 using UnityEngine;
@@ -18,7 +19,7 @@ namespace KarachiTycoon.Game
         public Material Mat;
         public Color Color;
         public float Base;
-        public bool Backed, DhabaOnly, Facade, Coal;
+        public bool Backed, DhabaOnly, Facade, Coal, Early;
     }
 
     // Builds Burns Road procedurally from Data/burns_road.json (art style guide §8 old-city kit).
@@ -29,6 +30,7 @@ namespace KarachiTycoon.Game
         public readonly List<Glowing> Glows = new List<Glowing>();
         public readonly Dictionary<string, GameObject> Items = new Dictionary<string, GameObject>();
         public GameObject Dhaba, Stall;
+        public readonly List<Transform> Grills = new List<Transform>();
         GameData d;
         System.Random rng;
 
@@ -44,6 +46,10 @@ namespace KarachiTycoon.Game
             BuildStall(s);
             BuildDhaba(s);
             BuildRivals();
+            BuildStreetLife();
+            // The street never moves: merge it into static batches so phones draw far fewer batches.
+            // (Items and upgrades can still be shown or hidden; glowing materials keep their own colours.)
+            StaticBatchingUtility.Combine(gameObject);
         }
 
         Transform Group(string name, Vector3 pos)
@@ -76,9 +82,12 @@ namespace KarachiTycoon.Game
         void BuildGround()
         {
             var t = Group("ground", Vector3.zero);
-            Box(t, W(0, -0.05f, 0.9f), new Vector3(90, 0.1f, 7.2f), Mat("#4A4744", 0.05f), "asphalt");
-            Box(t, W(0, 0.08f, -4.5f), new Vector3(90, 0.16f, 3.6f), Mat("#B9AD98"), "pavement_near");
-            Box(t, W(0, 0.08f, 6.5f), new Vector3(90, 0.16f, 4f), Mat("#B9AD98"), "pavement_far");
+            Box(t, W(0, -0.05f, 0.9f), new Vector3(90, 0.1f, 7.2f), MatTex("#4A4744", "asphalt", new Vector2(30, 2.4f), 0.05f), "asphalt");
+            Box(t, W(0, 0.08f, -4.5f), new Vector3(90, 0.16f, 3.6f), MatTex("#B9AD98", "paving", new Vector2(45, 1.8f)), "pavement_near");
+            Box(t, W(0, 0.08f, 6.5f), new Vector3(90, 0.16f, 4f), MatTex("#B9AD98", "paving", new Vector2(45, 2f)), "pavement_far");
+            // Faded lane paint, long since worn.
+            var paint = Mat("#BDB6A6", 0.05f);
+            for (int i = 0; i < 30; i++) Box(t, W(-44 + i * 3, 0.005f, 0.9f), new Vector3(1.4f, 0.01f, 0.12f), paint, "lane");
             // Black and yellow kerbs.
             for (int i = 0; i < 45; i++)
             {
@@ -96,7 +105,15 @@ namespace KarachiTycoon.Game
             float tint = (float)r.NextDouble() * 0.12f - 0.06f;
             var stone = Hex("#D9B77E"); stone = new Color(stone.r + tint, stone.g + tint, stone.b + tint * 0.6f);
             var stoneMat = Mat("#" + ColorUtility.ToHtmlStringRGB(stone));
-            Box(t, W(x0, h / 2, -11), new Vector3(8, h, 10), stoneMat, "mass");
+            var plaster = MatTex("#" + ColorUtility.ToHtmlStringRGB(stone), "plaster", new Vector2(2, Mathf.Max(1, h / 4)));
+            Box(t, W(x0, h / 2, -11), new Vector3(8, h, 10), plaster, "mass");
+            // Stone pilasters between the shop bays, and a carved parapet with a date plaque on top.
+            var shadowStone = MatTex("#A8865A", "plaster", new Vector2(1, 2));
+            foreach (var px in new[] { x0 - 3.9f, x0, x0 + 3.9f }) Box(t, W(px, 1.75f, -5.95f), new Vector3(0.32f, 3.5f, 0.2f), shadowStone, "pilaster");
+            for (int i = 0; i < 14; i++) Box(t, W(x0 - 3.6f + i * 0.555f, h + 0.32f, -6.0f), new Vector3(0.26f, 0.64f, 0.22f), plaster, "parapet");
+            Box(t, W(x0, h + 0.68f, -6.0f), new Vector3(8.1f, 0.1f, 0.34f), shadowStone, "coping");
+            Box(t, W(x0, h - 0.5f, -5.97f), new Vector3(1.5f, 0.5f, 0.05f), Mat("#EDE6D6"), "date_plaque");
+            if (!string.IsNullOrEmpty(b.Plaque)) Label(t, W(x0, h - 0.5f, -6.01f), b.Plaque, "#3B342E", 0.012f);
             var dark = Mat("#2A2420");
             var shutter = Mat(b.Shutter);
             var band = Mat("#E6CFA0");
@@ -114,6 +131,12 @@ namespace KarachiTycoon.Game
                         Box(t, W(wx + 0.62f, y, -5.94f), new Vector3(0.38f, 1.85f, 0.05f), shutter, "shutter");
                         double lit = r.NextDouble();
                         if (lit < 0.42) { var g = AddGlow(t, W(wx, y, -5.95f), new Vector3(0.75f, 1.7f, 0.04f), lit < 0.16 ? "#96AAA5" : "#FFAA5A", 0.9f); g.Facade = true; }
+                        // Split AC units bolted under some windows, with a drip stain below.
+                        if (r.NextDouble() < 0.22)
+                        {
+                            Box(t, W(wx, y - 1.18f, -6.18f), new Vector3(0.78f, 0.42f, 0.32f), Mat("#D6D3CB", 0.3f), "ac_unit");
+                            Cyl(t, W(wx + 0.16f, y - 1.18f, -6.35f), 0.14f, 0.02f, Mat("#4A4744"), "ac_fan").transform.localRotation = Quaternion.Euler(90, 0, 0);
+                        }
                     }
             }
             // Jharoka balconies.
@@ -124,6 +147,18 @@ namespace KarachiTycoon.Game
                     float bx = x0 - 4 + bay * 4 + 2, by = 3.5f + 3 * f + 1.35f;
                     Box(t, W(bx, by, -5.6f), new Vector3(2.9f, 1.5f, 0.75f), wood, "jharoka");
                     Box(t, W(bx, by + 0.85f, -5.55f), new Vector3(3.1f, 0.12f, 0.95f), wood, "jharoka_roof");
+                    // Washing hung out on a line below the balcony.
+                    if (r.NextDouble() < 0.7)
+                    {
+                        Wire(t, W(bx - 1.4f, by - 0.85f, -5.15f), W(bx + 1.4f, by - 0.85f, -5.15f), 0.12f, Mat("#2A2420"));
+                        string[] cloth = { "#C8202F", "#EDE6D6", "#2B6FA8", "#E58B2A", "#3E8E5E", "#B03A7A", "#E8C35A" };
+                        int n = 3 + r.Next(4);
+                        for (int k = 0; k < n; k++)
+                        {
+                            float cx = bx - 1.15f + k * (2.3f / n);
+                            Box(t, W(cx, by - 1.12f - (float)r.NextDouble() * 0.1f, -5.15f), new Vector3(0.32f, 0.5f + (float)r.NextDouble() * 0.25f, 0.02f), Mat(cloth[r.Next(cloth.Length)], 0.2f), "laundry");
+                        }
+                    }
                 }
             // Ground floor: two shop bays with signboards and tube lights.
             for (int bay = 0; bay < 2; bay++)
@@ -131,14 +166,30 @@ namespace KarachiTycoon.Game
                 float sx = x0 - 4 + bay * 4 + 2;
                 var sign = b.Signs.Find(s => s.Bay == bay);
                 bool shut = sign != null && sign.Shut;
-                Box(t, W(sx, 1.4f, -5.96f), new Vector3(3.3f, 2.75f, 0.06f), shut ? Mat("#6E756D") : Mat("#4A3A2C"), shut ? "shutter_down" : "shop_interior");
+                Box(t, W(sx, 1.4f, -5.96f), new Vector3(3.3f, 2.75f, 0.06f), shut ? MatTex("#7A817A", "shutter", new Vector2(1, 3)) : Mat("#4A3A2C"), shut ? "shutter_down" : "shop_interior");
+                // Posters pasted on the pilasters, newer over older.
+                if (r.NextDouble() < 0.6)
+                {
+                    string[] posterCols = { "#C8202F", "#2B6FA8", "#E8C35A", "#3E8E5E", "#EDE6D6" };
+                    for (int k = 0; k < 2; k++)
+                        Box(t, W(sx - 1.92f + (float)r.NextDouble() * 0.1f, 1.3f + k * 0.55f, -6.07f), new Vector3(0.26f, 0.4f, 0.01f), Mat(posterCols[r.Next(posterCols.Length)], 0.2f), "poster")
+                            .transform.localRotation = Quaternion.Euler(0, 0, (float)(r.NextDouble() - 0.5) * 10);
+                }
                 if (!shut) AddGlow(t, W(sx, 2.82f, -5.9f), new Vector3(1.6f, 0.05f, 0.05f), "#E8F4F0", 1.6f);
                 if (sign != null) BuildSign(t, W(sx, 3.12f, -5.9f), new Vector2(3.6f, 0.64f), sign.En, sign.Ur, sign.Bg, sign.Fg);
             }
+            // Cool tube light spilling out of the open shops onto the pavement (one light per building, phone friendly).
+            if (b.Signs.Count(sg => !sg.Shut) > 0 || b.Signs.Count < 2) AddLight("#E8F4F0", W(x0, 2.5f, -4.9f), 0.7f, 7);
+
             // Roof clutter: black water tanks.
             var tank = Mat("#1E1E1E", 0.4f);
             Cyl(t, W(x0 - 2, h + 0.58f, -8.5f), 0.55f, 1.15f, tank, "water_tank");
             if (b.Seed % 2 == 1) Cyl(t, W(x0 + 1.2f, h + 0.58f, -9.5f), 0.55f, 1.15f, tank, "water_tank");
+            if (b.Seed % 3 != 0)
+            {
+                var dish = Cyl(t, W(x0 + 2.6f, h + 0.75f, -7.2f), 0.42f, 0.04f, Mat("#CFCFCB", 0.4f), "satellite_dish");
+                dish.transform.localRotation = Quaternion.Euler(60, 20, 0);
+            }
         }
 
         // Signboards use pre-painted Nastaliq textures (Resources/Signs) where they exist, because
@@ -153,7 +204,7 @@ namespace KarachiTycoon.Game
             quad.transform.localPosition = pos;
             // A Unity quad faces -z, which is toward the street camera after the z flip in Util.W.
             quad.transform.localScale = new Vector3(size.x, size.y, 1);
-            var m = new Material(Lit);
+            var m = NewLit();
             if (tex != null)
             {
                 tex.wrapMode = TextureWrapMode.Clamp;
@@ -194,6 +245,9 @@ namespace KarachiTycoon.Game
             }
             Cyl(t, W(-18, 17, -48), 1f, 34, Mat("#E8E2CF"), "minaret");
             Ball(t, W(-8, 14, -52), 6, Mat("#E8E2CF"), "dome");
+            // The mosque's green neon is the first light on at Maghrib (style guide, lighting).
+            var neon = AddGlow(t, W(-18, 30.5f, -48), new Vector3(2.4f, 0.25f, 2.4f), "#3BEA7A", 4); neon.Early = true;
+            var neon2 = AddGlow(t, W(-8, 20.2f, -52), new Vector3(0.3f, 1.4f, 0.3f), "#3BEA7A", 4); neon2.Early = true;
         }
 
         void BuildPolesAndWires()
@@ -319,6 +373,64 @@ namespace KarachiTycoon.Game
             }
         }
 
+        // The street spills out (style guide rule 4): parked motorbikes, stacked plastic chairs,
+        // crates, and strings of bunting across the road.
+        void BuildStreetLife()
+        {
+            var t = Group("street_life", Vector3.zero);
+            var r = new System.Random(77);
+            float F() => (float)r.NextDouble();
+            float pitch = d.District.Pitch.X;
+            string[] bikeCols = { "#C8202F", "#1E1E1C", "#2B6FA8", "#7A1F1F" };
+            foreach (var (bx, bz) in new[] { (-27f, 5.2f), (-21.5f, 5.0f), (-12f, 5.3f), (9f, 5.1f), (13.5f, 5.2f), (24f, 5.0f), (-30f, -4.2f), (21f, -4.0f) })
+            {
+                if (Mathf.Abs(bx - pitch) < 4) continue;
+                var bike = new GameObject("motorbike").transform; bike.SetParent(t, false);
+                bike.localPosition = W(bx, 0.16f, bz); bike.localRotation = Quaternion.Euler(0, 70 + F() * 40, 0);
+                var body = Mat(bikeCols[r.Next(bikeCols.Length)], 0.5f, 0.2f);
+                foreach (var wz in new[] { -0.55f, 0.55f }) Cyl(bike, new Vector3(0, 0.3f, wz), 0.3f, 0.08f, Mat("#1A1816"), "wheel").transform.localRotation = Quaternion.Euler(0, 0, 90);
+                Box(bike, new Vector3(0, 0.55f, 0.05f), new Vector3(0.22f, 0.3f, 0.9f), body, "tank");
+                Box(bike, new Vector3(0, 0.74f, -0.25f), new Vector3(0.24f, 0.08f, 0.55f), Mat("#2A2420"), "seat");
+                Box(bike, new Vector3(0, 0.95f, 0.5f), new Vector3(0.7f, 0.04f, 0.04f), Mat("#9A9890", 0.6f, 0.6f), "handlebar");
+                Ball(bike, new Vector3(0, 0.82f, 0.62f), 0.07f, Mat("#F4E7C8", 0.7f), "headlamp");
+            }
+            // Plastic chairs stacked outside the shops, and wooden crates.
+            string[] chairCols = { "#E8E2CF", "#C8202F", "#2B6FA8", "#3E8E5E" };
+            foreach (var cx in new[] { -25f, -10.5f, 11f, 26f })
+            {
+                if (Mathf.Abs(cx - pitch) < 4) continue;
+                var col = Mat(chairCols[r.Next(chairCols.Length)], 0.5f);
+                for (int k = 0; k < 4; k++) Box(t, W(cx, 0.4f + k * 0.12f, -5.2f), new Vector3(0.46f, 0.05f, 0.44f), col, "chair_stack");
+                Box(t, W(cx, 0.24f, -5.2f), new Vector3(0.4f, 0.4f, 0.38f), col, "chair_legs");
+                Box(t, W(cx + 0.8f, 0.36f, -5.3f), new Vector3(0.6f, 0.4f, 0.45f), MatTex("#8A6A42", "wood", new Vector2(1, 1)), "crate");
+            }
+            // Bunting strung across the road between the poles.
+            string[] flagCols = { "#C8202F", "#E8C35A", "#2B6FA8", "#3E8E5E", "#E58B2A", "#B03A7A" };
+            foreach (var (x1, x2) in new[] { (-24f, -6f), (5.2f, 17f) })
+            {
+                var a = W(x1, 6.6f, -2.95f); var bpt = W(x2, 6.6f, 4.5f);
+                Wire(t, a, bpt, 0.6f, Mat("#2A2420"));
+                for (int k = 1; k < 24; k++)
+                {
+                    float u = k / 24f;
+                    var p = Vector3.Lerp(a, bpt, u) + Vector3.down * 0.6f * 4 * u * (1 - u) + Vector3.down * 0.12f;
+                    var flag = Box(t, p, new Vector3(0.22f, 0.22f, 0.01f), Mat(flagCols[k % flagCols.Length], 0.2f), "flag");
+                    flag.transform.localRotation = Quaternion.LookRotation(bpt - a) * Quaternion.Euler(0, 90, 45);
+                }
+            }
+        }
+
+        // A small painted label (plaques, dates).
+        void Label(Transform parent, Vector3 pos, string text, string hex, float size)
+        {
+            var label = new GameObject("label").AddComponent<TextMesh>();
+            label.transform.SetParent(parent, false);
+            label.transform.localPosition = pos;
+            label.text = text; label.anchor = TextAnchor.MiddleCenter; label.alignment = TextAlignment.Center;
+            label.fontSize = 64; label.characterSize = size * 4; label.color = Hex(hex);
+            var font = UiFont; if (font != null) { label.font = font; label.GetComponent<MeshRenderer>().sharedMaterial = font.material; }
+        }
+
         void BuildRivals()
         {
             foreach (var rv in d.District.Rivals)
@@ -333,6 +445,7 @@ namespace KarachiTycoon.Game
                 else
                 {
                     Box(t, new Vector3(0, 0.42f, 0), new Vector3(1.8f, 0.85f, 0.7f), Mat("#3A3836"), "grill");
+                    Grills.Add(t);
                     var coal = AddGlow(t, new Vector3(0, 0.88f, 0), new Vector3(1.6f, 0.06f, 0.4f), "#FF6A2B", 3); coal.Coal = true;
                     var l = AddLight("#FF6A2B", W(rv.X, 1.25f, rv.Z - 1.2f), 2f, 6); l.Flicker = true;
                 }

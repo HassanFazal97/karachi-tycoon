@@ -15,6 +15,7 @@ namespace KarachiTycoon.Game
             public List<Transform> Bodies = new List<Transform>();
             public List<Vector3> Offsets = new List<Vector3>();
             public List<(Transform l, Transform r)> Legs = new List<(Transform, Transform)>();
+            public List<(Transform l, Transform r)> Arms = new List<(Transform, Transform)>();
             public Transform Bar, Fill;
             public Material FillMat;
             public TextMesh Bubble;
@@ -41,32 +42,65 @@ namespace KarachiTycoon.Game
 
         void OnDestroy() { if (sim != null) { sim.Bubble -= OnBubble; sim.Cleared -= Clear; } }
 
-        Transform MakeBody(Transform parent, string kind, int seed, float scale, out (Transform, Transform) legs)
+        // About seven heads tall (style guide): shalwar and a knee-length kameez, arms that swing,
+        // a dupatta for women, a topi for some men. Uncle Rasheed: white kurta, waistcoat, glasses, grey beard.
+        Transform MakeBody(Transform parent, string kind, int seed, float scale, out (Transform, Transform) legs, out (Transform, Transform) arms)
         {
             var r = new System.Random(seed);
             string P(string[] a) => a[r.Next(a.Length)];
             string skin = P(Skin), top, bottom; bool topi = false;
             switch (kind)
             {
-                case "uncle": skin = "#B98057"; top = "#E4DFD3"; bottom = "#E4DFD3"; topi = true; break;
-                case "student": top = P(new[] { "#2B3F8F", "#EDE6D6", "#C8202F", "#2F2F2F" }); bottom = "#2E3A4E"; break;
-                case "babu": top = P(new[] { "#EDE6D6", "#BFD3E0", "#C9D8C5" }); bottom = "#3B3A40"; break;
-                case "woman": top = P(Bright); bottom = P(new[] { "#EDE6D6", "#3B342E" }); break;
+                case "uncle": skin = "#B98057"; top = "#ECE7DC"; bottom = "#ECE7DC"; topi = true; break;
+                case "student": top = P(new[] { "#2B3F8F", "#EDE6D6", "#8E2B25", "#2F2F2F", "#5E8C61" }); bottom = "#2E3A4E"; break;
+                case "babu": top = P(new[] { "#EDE6D6", "#BFD3E0", "#C9D8C5", "#D8CBB0" }); bottom = "#3B3A40"; break;
+                case "woman": top = P(Bright); bottom = P(new[] { "#EDE6D6", "#3B342E", "#D8CBB0" }); break;
                 case "child": top = P(Bright); bottom = "#2E3A4E"; break;
-                default: top = P(Work); bottom = P(Work); topi = r.NextDouble() < 0.3; break;
+                default: top = P(Work); bottom = top; topi = r.NextDouble() < 0.3; break;
             }
+            bool woman = kind == "woman";
             var root = new GameObject(kind).transform; root.SetParent(parent, false);
             root.localScale = Vector3.one * scale;
-            var hipL = new GameObject("hipL").transform; hipL.SetParent(root, false); hipL.localPosition = new Vector3(-0.09f, 0.82f, 0);
-            var hipR = new GameObject("hipR").transform; hipR.SetParent(root, false); hipR.localPosition = new Vector3(0.09f, 0.82f, 0);
-            Box(hipL, new Vector3(0, -0.4f, 0), new Vector3(0.16f, 0.8f, 0.16f), Mat(bottom), "leg");
-            Box(hipR, new Vector3(0, -0.4f, 0), new Vector3(0.16f, 0.8f, 0.16f), Mat(bottom), "leg");
-            Cyl(root, new Vector3(0, 1.0f, 0), 0.22f, 0.86f, Mat(top), "kameez");
-            Ball(root, new Vector3(0, 1.56f, 0), 0.115f, Mat(skin), "head");
-            if (topi) Cyl(root, new Vector3(0, 1.66f, 0), 0.11f, 0.08f, Mat("#F7F3EA"), "topi");
-            else Ball(root, new Vector3(0, 1.6f, 0.01f), 0.12f, Mat(kind == "uncle" ? "#CFCBC4" : "#1E1A18"), "hair");
-            if (kind == "woman") Box(root, new Vector3(0, 1.4f, 0), new Vector3(0.46f, 0.05f, 0.3f), Mat(P(Bright)), "dupatta");
+            var shalwar = Mat(bottom); var kameez = Mat(top); var skinM = Mat(skin);
+            // Legs: loose shalwar and dark chappals.
+            var hipL = new GameObject("hipL").transform; hipL.SetParent(root, false); hipL.localPosition = new Vector3(-0.1f, 0.86f, 0);
+            var hipR = new GameObject("hipR").transform; hipR.SetParent(root, false); hipR.localPosition = new Vector3(0.1f, 0.86f, 0);
+            foreach (var hip in new[] { hipL, hipR })
+            {
+                Cyl(hip, new Vector3(0, -0.42f, 0), 0.085f, 0.84f, shalwar, "shalwar");
+                Box(hip, new Vector3(0, -0.84f, 0.05f), new Vector3(0.12f, 0.05f, 0.24f), Mat("#2A2018"), "chappal");
+            }
+            // Kameez: chest and a flared skirt to the knee (longer for women).
+            Cap(root, new Vector3(0, 1.22f, 0), 0.17f, 0.66f, kameez, "kameez_top");
+            float hem = woman ? 0.62f : 0.72f;
+            Cyl(root, new Vector3(0, (hem + 1.0f) / 2, 0), 0.2f, 1.0f - hem, kameez, "kameez_skirt");
+            // Arms swing from the shoulders.
+            var shL = new GameObject("shoulderL").transform; shL.SetParent(root, false); shL.localPosition = new Vector3(-0.22f, 1.42f, 0);
+            var shR = new GameObject("shoulderR").transform; shR.SetParent(root, false); shR.localPosition = new Vector3(0.22f, 1.42f, 0);
+            foreach (var sh in new[] { shL, shR })
+            {
+                Cap(sh, new Vector3(0, -0.28f, 0), 0.055f, 0.6f, kameez, "sleeve");
+                Ball(sh, new Vector3(0, -0.6f, 0), 0.05f, skinM, "hand");
+            }
+            Cyl(root, new Vector3(0, 1.52f, 0), 0.05f, 0.08f, skinM, "neck");
+            Ball(root, new Vector3(0, 1.66f, 0), 0.115f, skinM, "head");
+            if (topi) Cyl(root, new Vector3(0, 1.76f, 0), 0.105f, 0.08f, Mat("#F7F3EA"), "topi");
+            else Ball(root, new Vector3(0, 1.7f, -0.01f), 0.12f, Mat(kind == "uncle" ? "#CFCBC4" : "#1E1A18"), "hair");
+            if (kind == "uncle")
+            {
+                Box(root, new Vector3(0, 1.22f, 0.01f), new Vector3(0.37f, 0.5f, 0.3f), Mat("#3B342E"), "waistcoat");
+                Box(root, new Vector3(0, 1.68f, 0.11f), new Vector3(0.17f, 0.03f, 0.02f), Mat("#1A1816", 0.6f), "glasses");
+                Ball(root, new Vector3(0, 1.58f, 0.07f), 0.075f, Mat("#D8D4CC"), "beard");
+            }
+            if (woman)
+            {
+                var dupatta = Mat(P(Bright), 0.2f);
+                Box(root, new Vector3(0, 1.44f, 0), new Vector3(0.48f, 0.05f, 0.32f), dupatta, "dupatta");
+                Box(root, new Vector3(0, 1.12f, -0.15f), new Vector3(0.34f, 0.62f, 0.03f), dupatta, "dupatta_back");
+                Ball(root, new Vector3(0, 1.72f, -0.02f), 0.125f, dupatta, "dupatta_head");
+            }
             legs = (hipL, hipR);
+            arms = (shL, shR);
             return root;
         }
 
@@ -79,15 +113,15 @@ namespace KarachiTycoon.Game
             {
                 foreach (var (k, ox, oz, sc) in new[] { ("mazdoor", 0f, 0f, 1f), ("woman", 0.5f, 0.15f, 1f), ("child", -0.4f, 0.35f, 0.62f) })
                 {
-                    var b = MakeBody(p.Root, k, c.Look + (int)(ox * 10), sc, out var legs);
-                    b.localPosition = new Vector3(ox, 0, oz); p.Bodies.Add(b); p.Offsets.Add(b.localPosition); p.Legs.Add(legs);
+                    var b = MakeBody(p.Root, k, c.Look + (int)(ox * 10), sc, out var legs, out var arms);
+                    b.localPosition = new Vector3(ox, 0, oz); p.Bodies.Add(b); p.Offsets.Add(b.localPosition); p.Legs.Add(legs); p.Arms.Add(arms);
                 }
             }
             else
             {
                 string kind = c.Arch == "student" && c.Look % 3 == 0 ? "woman" : c.Arch;
-                var b = MakeBody(p.Root, kind, c.Look, 1, out var legs);
-                p.Bodies.Add(b); p.Offsets.Add(Vector3.zero); p.Legs.Add(legs);
+                var b = MakeBody(p.Root, kind, c.Look, 1, out var legs, out var arms);
+                p.Bodies.Add(b); p.Offsets.Add(Vector3.zero); p.Legs.Add(legs); p.Arms.Add(arms);
             }
             p.Bar = new GameObject("patience").transform; p.Bar.SetParent(p.Root, false); p.Bar.localPosition = new Vector3(0, 2.05f, 0);
             Box(p.Bar, Vector3.zero, new Vector3(0.62f, 0.09f, 0.01f), Mat("#2A2320"), "bar_bg");
@@ -176,6 +210,8 @@ namespace KarachiTycoon.Game
                         if (moved > 0.0005f) p.Phase += moved * 4.2f;
                         float a = moved > 0.0005f ? Mathf.Sin(p.Phase) * 32 : 0;
                         l.localRotation = Quaternion.Euler(a, 0, 0); r.localRotation = Quaternion.Euler(-a, 0, 0);
+                        var (al, ar) = p.Arms[i];
+                        al.localRotation = Quaternion.Euler(-a * 0.7f, 0, 0); ar.localRotation = Quaternion.Euler(a * 0.7f, 0, 0);
                     }
                 }
                 // Patience while waiting; cooking progress (gold) once the order is on the tawa.

@@ -49,6 +49,9 @@ namespace KarachiTycoon.Game
             // Two upgrades so they show on the thela, and a stamp the first time a daily goal completes.
             gc.Sim.BuyUpgrade("stools"); gc.Sim.BuyUpgrade("tubelight");
             gc.Sim.GoalDone += _ => stampDue = true;
+            yield return Advance(gc, 430);
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return Shot("00_morning");
             yield return Advance(gc, 1060);
             gc.Toast("Uncle Rasheed: \"Chai mein elaichi kam hai, beta. Dada ki tarah banao.\"", "uncle");
             gc.Toast("Almost out of Milk. Buy more in Supplies.", "warn");
@@ -83,6 +86,13 @@ namespace KarachiTycoon.Game
                 yield return Shot("03_" + tab.ToLowerInvariant());
             }
             ui.DebugShow("none");
+            yield return Advance(gc, 1265);
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("10_night");
+            // Rough cost of a frame at night (lights on): object counts and average frame time over 3 s.
+            int frames = 0; float t0 = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - t0 < 3) { frames++; yield return null; }
+            Debug.Log($"[ShotRunner] perf: {frames / 3f:F0} fps, renderers={FindObjectsByType<Renderer>().Length}, lights={FindObjectsByType<Light>().Length}, particles={FindObjectsByType<ParticleSystem>().Length}");
             yield return Advance(gc, 99999);
             yield return new WaitForSecondsRealtime(0.6f);
             yield return Shot("04_ledger");

@@ -23,6 +23,7 @@ namespace KarachiTycoon.Game
         };
 
         public Light Sun;
+        static float LightBoost => UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null ? 4.5f : 1f;
         public Camera Cam;
         StreetBuilder street;
         Sim.Sim sim;
@@ -53,8 +54,10 @@ namespace KarachiTycoon.Game
 
             Cam.backgroundColor = Color.Lerp(bot, top, 0.55f);
             RenderSettings.fogColor = haze;
-            RenderSettings.ambientSkyColor = Color.Lerp(top, Color.white, 0.4f) * hemi * 1.4f;
-            RenderSettings.ambientEquatorColor = haze * hemi * 1.2f;
+            // URP's lights fall off physically, so practicals need more punch and nights a little more fill.
+            float fill = LightBoost > 1 ? Mathf.Lerp(1.6f, 1f, Mathf.Clamp01(hemi / 0.5f)) : 1f;
+            RenderSettings.ambientSkyColor = Color.Lerp(top, Color.white, 0.4f) * hemi * 1.4f * fill;
+            RenderSettings.ambientEquatorColor = haze * hemi * 1.2f * fill;
             RenderSettings.ambientGroundColor = bot * hemi * 0.6f;
 
             // Sun moves east to west, leaning south so the shopfronts catch it; a cool moon at night.
@@ -73,12 +76,13 @@ namespace KarachiTycoon.Game
                 if (p.DhabaOnly && !dhaba) i = 0;
                 if (outage) i = p.Backed ? (gen ? i * 0.7f : (p.StallLamp ? 1f * prac : 0)) : 0;
                 if (p.Flicker) i *= 0.8f + Mathf.Sin(time * 13) * 0.08f + Mathf.Sin(time * 7.3f) * 0.1f;
-                p.Light.intensity = i;
+                p.Light.intensity = i * LightBoost;
             }
             foreach (var g in street.Glows)
             {
                 float i = g.Base * prac;
                 if (g.Coal) i = m > 960 ? g.Base * (0.8f + Mathf.Sin(time * 9) * 0.2f) : g.Base * 0.3f;
+                if (g.Early) { SetGlow(g.Mat, g.Color, g.Base * Mathf.Max(prac, Mathf.Clamp01((m - 1065) / 25f))); continue; }
                 if (g.DhabaOnly && !dhaba) i = 0;
                 if (outage && !g.Coal) i = g.Backed && gen ? i * 0.7f : g.Facade ? i * 0.04f : 0;
                 SetGlow(g.Mat, g.Color, i);

@@ -92,6 +92,22 @@ Content lives in `Resources/Data/story.json`; the rules are in the Sim (plain C#
 - **Uncle Rasheed's quest line (4 requests):** "Dada's elaichi chai" (serve 60 chai), "The shami secret" (120 bun kababs), "Nihari, 1975" (40 nihari at the dhaba) and "Burns Road knows your name" (two stars). Each opens and closes with Uncle's card, and the current one sits at the top of the goals card.
 - **Analytics:** `friend_level`, `page_found`, `card_shown`, `card_choice`, `quest_start`, `quest_done`.
 
+## Art pass (M6)
+
+Following the art style guide ("painted realism", the five Karachi rules, the Burns Road palette and lighting presets):
+
+- **URP** (`Assets/Settings/KT_URP.asset`, made by `BuildTools`): HDR, one soft shadow cascade, per-pixel lights, FXAA, no MSAA, so it runs on mid-range Android. Template materials in `Resources/Materials` pull in only the shader variants used.
+- **Post-processing** (`Visuals.cs`): bloom on the practical lights, a neutral film curve, slight warmth and contrast, a soft vignette. Settings, then Graphics, then "Battery saver" turns post-processing and shadows off.
+- **Light:** three colour temperatures at night, as the guide asks: warm tungsten at the stall and the sodium pole lamps, cool tube light spilling from the shops, hot charcoal at the grills. The mosque's green neon comes on first at Maghrib.
+- **Painted textures** (`Paint.cs`, made at start-up): lime plaster with rain streaks, worn asphalt, paving slabs, ribbed rolling shutters, wood grain.
+- **Lived-in buildings:** stone pilasters, carved parapets and date plaques, split AC units, washing on lines under the jharokas, satellite dishes, posters pasted on pilasters, black water tanks, tangled wires.
+- **The street spills out:** parked motorbikes, stacked plastic chairs, crates, bunting strung across the road, faded lane paint.
+- **Sky** (`Ambient.cs`): kites over the rooftops and circling crows by day; steam off the kettle and the nihari deg; charcoal smoke and, after dark, sparks from the grills.
+- **People:** about seven heads tall, with shalwar and a knee-length kameez (longer for women), dupattas, swinging arms and chappals. Uncle Rasheed wears a white kurta, a waistcoat and glasses, with a grey beard.
+- **Performance:** the street is static-batched once it is built. In the test build it runs at 60 fps (vsync) with about 15 lights and 3 particle systems; check on a real mid-range phone before release.
+
+Before and after screenshots are in `design/screenshots/m6`.
+
 ## Ads and purchases
 
 Ads live in `Assets/Scripts/Game/Ads` (design doc §22):
@@ -125,8 +141,7 @@ Analytics events (`session_start`, `game_start`, `panel_open`, `day_end`, `act_d
 
 ## Next steps
 
-See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, portrait phone and landscape desktop layouts, touch camera, audio, analytics hooks), the ads refactor, M2 (the guided first day), M3 (daily goals, thela upgrades, Rush streaks, feedback) and M4 (regulars, recipe pages, choice cards, Uncle's quests). Balance with the sensible-player run: Act 1 on day 3, Act 2 late on day 7 (goal rewards and streak tips bring it about 20 game-hours earlier than before).
+See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, portrait phone and landscape desktop layouts, touch camera, audio, analytics hooks), the ads refactor, M2 (the guided first day), M3 (daily goals, thela upgrades, Rush streaks, feedback) M4 (regulars, recipe pages, choice cards, Uncle's quests) and M6 (the art pass: URP, bloom, painted textures, lived-in street, better people). Balance with the sensible-player run: Act 1 on day 3, Act 2 late on day 7 (goal rewards and streak tips bring it about 20 game-hours earlier than before).
 
-- Set up URP with bloom for the tube lights and sodium lamps.
-- Swap the primitive people and buildings for low-poly models (art style guide in the design doc).
+- Real low-poly models (CC0 packs) for people and props, and a Naskh font for Urdu UI text.
 - Wire up LevelPlay, Unity IAP, analytics and the consent prompts.

@@ -133,6 +133,8 @@ namespace KarachiTycoon.Game
 
             box.Add(Text("Layout", "label-gold"));
             box.Add(Seg(new[] { ("auto", "Auto"), ("phone", "Phone"), ("desktop", "Desktop") }, Settings.Layout, v => Settings.Layout = v));
+            box.Add(Text("Graphics", "label-gold"));
+            box.Add(Seg(new[] { ("full", "Full (bloom, shadows)"), ("saver", "Battery saver") }, Settings.BatterySaver ? "saver" : "full", v => Settings.BatterySaver = v == "saver"));
             box.Add(Text("Interface size", "label-gold"));
             box.Add(Seg(new[] { ("0.85", "Small"), ("1", "Medium"), ("1.2", "Large") }, Settings.UiScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
                 v => Settings.UiScale = float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)));

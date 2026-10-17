@@ -63,6 +63,7 @@ namespace KarachiTycoon.Game
             foreach (var l in FindObjectsByType<Light>()) if (l.type == LightType.Directional) l.gameObject.SetActive(false);
             Rig = cam.gameObject.AddComponent<CameraRig>();
             Rig.Init(cam, Settings.PhoneLayout);
+            gameObject.AddComponent<Visuals>().Init(cam);
             Audio = gameObject.AddComponent<AudioDirector>();
             Audio.Init(PrayerMinutes);
             ui = gameObject.AddComponent<GameUi>();
@@ -82,6 +83,7 @@ namespace KarachiTycoon.Game
             Street.RefreshStage(Sim);
             gameObject.AddComponent<DayCycle>().Init(Sim, Street, Rig.Cam);
             new GameObject("People").AddComponent<PeopleView>().Init(Sim, Rig.Cam);
+            new GameObject("Ambient").AddComponent<Ambient>().Init(Sim, Street);
             Audio.Attach(Sim);
             Sim.Noticed += OnNotice;
             Sim.Unlocked += id => { Toast($"New dish on the menu: {Sim.Dish[id].En}. {Sim.Dish[id].Note}", "good"); Street.RefreshStage(Sim); };
