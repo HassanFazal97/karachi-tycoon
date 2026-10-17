@@ -136,6 +136,12 @@ Many levels show on the cart: a bigger kettle, a second tawa, truck art, tube li
 
 Pacing with the sensible-player run (`dotnet run --project Tools/BalanceRunner -- ghee 7`): Act 1 on day 3, Bara thela day 3-4, Pavement dhaba day 5, Act 2 day 8, Pakki dukaan day 9, Family restaurant day 13-14, Famous restaurant day 21. `-- migrate` checks that an old save (M3 upgrades, two-person staff) loads into the tracks.
 
+From the dukaan up the thela retires (a small takeaway counter stays by the queue) and the camera frames the whole building, from the shopfront to the roof. Buying a place plays a build moment: bamboo scaffolding and a green net go up, dust, then the reveal and a MUBARAK! stamp.
+
+**The map** (Map button, or N on desktop):
+- **Burns Road district view:** the camera pulls back over the whole food street. Pins mark your place (seats, staff), the next rung (what it still needs, and a tap opens Upgrades), the rivals, and the road on to Saddar.
+- **Karachi city map:** a painted map with the seven districts: Burns Road (open), then Saddar & Jodia Bazaar, Bahadurabad & Tariq Road, Gulshan & Jauhar, Clifton & Boat Basin, Zamzama & DHA, and Do Darya. Each locked one shows its format and what unlocks it. These become later chapters; they are data in `business.json`.
+
 Headless screenshots: start a test build with `-batchmode -kt-offscreen` and the ShotRunner renders the camera and the UI into textures. That works with the screen locked or on a CI machine.
 
 ## Ads and purchases

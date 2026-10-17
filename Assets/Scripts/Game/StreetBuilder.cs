@@ -32,11 +32,15 @@ namespace KarachiTycoon.Game
         public GameObject Dhaba, Stall;
         public readonly List<Transform> Grills = new List<Transform>();
         // The building that the dukaan and restaurant take over.
-        GameObject toLetShutter, toLetSign, neighbourSign, cart2Group, dukaanGroup, restaurantGroup, famousGroup;
+        GameObject toLetShutter, toLetSign, neighbourSign, cart2Group, dukaanGroup, restaurantGroup, famousGroup, counterGroup;
+        readonly List<GameObject> takhtaParts = new List<GameObject>();
+        string building;   // a tier being built: show the old place under scaffolding until the reveal
         readonly List<GameObject> chairs = new List<GameObject>();
         readonly Dictionary<string, List<(int level, GameObject go)>> trackProps = new Dictionary<string, List<(int, GameObject)>>();
         GameObject smallKettle;
         float homeX, homeH; int homeBay = -1;
+        public float HomeX => homeX;
+        public float HomeH => homeH;
         GameState state;
         GameData d;
         System.Random rng;
@@ -517,6 +521,13 @@ namespace KarachiTycoon.Game
             Box(dk, W(sx - 1.1f, 0.55f, -5.85f), new Vector3(0.9f, 1.1f, 0.2f), MatTex("#8A5A32", "wood", new Vector2(1, 1)), "counter");
             Box(dk, W(sx + 0.6f, 0.74f, -5.75f), new Vector3(1.1f, 0.04f, 0.6f), Mat("#D8D2C4", 0.5f), "table_in");
             BuildSign(dk, W(sx, 3.12f, -5.86f), new Vector2(3.6f, 0.64f), state.ShopName, state.ShopUrdu, "#C8202F", "#FFF3D6");
+            // A striped canvas awning over the dukaan front, and two hanging lanterns: clearly a proper shop now.
+            for (int i = 0; i < 8; i++)
+            {
+                var stripe = Box(dk, W(sx - 1.75f + i * 0.5f, 2.85f, -5.35f), new Vector3(0.5f, 0.05f, 1.3f), Mat(i % 2 == 0 ? "#3E8E5E" : "#EDE6D6", 0.2f), "awning");
+                stripe.transform.localRotation = Quaternion.Euler(-14, 0, 0);
+            }
+            foreach (var lx in new[] { sx - 1.4f, sx + 1.4f }) { var lg = AddGlow(dk, W(lx, 2.35f, -4.75f), new Vector3(0.22f, 0.3f, 0.22f), "#FFC27A", 2.4f); lg.Backed = true; }
             var dl = AddLight("#E8F4F0", W(sx, 2.4f, -5.2f), 0.4f, 6); dl.Backed = true; dl.DhabaOnly = false;
             dukaanLight = dl;
             dukaanGroup.SetActive(false);
@@ -539,21 +550,108 @@ namespace KarachiTycoon.Game
             var fm = famousGroup.transform;
             foreach (var (pos, size, col) in new[]
             {
-                (W(homeX, homeH + 0.85f, -5.95f), new Vector3(8.2f, 0.08f, 0.08f), "#FF4FA3"),
-                (W(homeX - 4.05f, homeH / 2 + 1.7f, -5.95f), new Vector3(0.08f, homeH - 3.4f, 0.08f), "#3BEA7A"),
-                (W(homeX + 4.05f, homeH / 2 + 1.7f, -5.95f), new Vector3(0.08f, homeH - 3.4f, 0.08f), "#3BEA7A"),
-                (W(homeX, 3.6f, -5.85f), new Vector3(7.8f, 0.07f, 0.07f), "#FF4FA3"),
+                (W(homeX, homeH + 0.85f, -6.05f), new Vector3(8.3f, 0.18f, 0.18f), "#FF4FA3"),
+                (W(homeX - 4.1f, homeH / 2 + 1.7f, -6.05f), new Vector3(0.18f, homeH - 3.4f, 0.18f), "#3BEA7A"),
+                (W(homeX + 4.1f, homeH / 2 + 1.7f, -6.05f), new Vector3(0.18f, homeH - 3.4f, 0.18f), "#3BEA7A"),
+                (W(homeX, 3.62f, -5.95f), new Vector3(7.9f, 0.14f, 0.14f), "#FF4FA3"),
+                (W(homeX, 3.5f + 3 * 1 + 0.2f, -6.05f), new Vector3(8.0f, 0.14f, 0.14f), "#3BEA7A"),
             })
-            { var g = AddGlow(fm, pos, size, col, 3.5f); g.Backed = true; }
+            { var g = AddGlow(fm, pos, size, col, 2.2f); g.Backed = true; }
+            // A tall vertical neon sign on the corner of the building.
+            var blade = AddGlow(fm, W(homeX + 4.6f, homeH / 2 + 2.2f, -6.4f), new Vector3(0.7f, homeH - 4.4f, 0.12f), "#FF4FA3", 2.2f); blade.Backed = true;
+            Box(fm, W(homeX + 4.6f, homeH / 2 + 2.2f, -6.47f), new Vector3(0.55f, homeH - 4.7f, 0.02f), Mat("#2A1220"), "blade_face");
             for (int i = 0; i < 4; i++)
             {
                 float tx = homeX - 2.6f + i * 1.75f;
                 Box(fm, W(tx, homeH + 0.74f, -9f), new Vector3(1.0f, 0.04f, 0.7f), Mat("#D8D2C4", 0.5f), "roof_table");
                 Box(fm, W(tx, homeH + 0.37f, -9f), new Vector3(0.1f, 0.74f, 0.1f), Mat("#9A9890", 0.6f, 0.6f), "roof_table_leg");
             }
-            for (int i = 0; i < 12; i++) { var g = AddGlow(fm, W(homeX - 3.7f + i * 0.67f, homeH + 2.1f - Mathf.Sin(i / 11f * Mathf.PI) * 0.35f, -7.5f), new Vector3(0.1f, 0.1f, 0.1f), "#FFC27A", 4f); g.Backed = true; }
-            Wire(fm, W(homeX - 3.8f, homeH + 2.15f, -7.5f), W(homeX + 3.8f, homeH + 2.15f, -7.5f), 0.35f, Mat("#2A2420"));
+            // Rooftop string lights: two strands of warm bulbs over the tables, and a parapet of fairy lights.
+            foreach (var (z, sag) in new[] { (-7.2f, 0.35f), (-8.6f, 0.45f) })
+            {
+                for (int i = 0; i < 14; i++) { var g = AddGlow(fm, W(homeX - 3.7f + i * 0.57f, homeH + 2.1f - Mathf.Sin(i / 13f * Mathf.PI) * sag, z), new Vector3(0.2f, 0.2f, 0.2f), "#FFC27A", 2.6f); g.Backed = true; }
+                Wire(fm, W(homeX - 3.8f, homeH + 2.15f, z), W(homeX + 3.8f, homeH + 2.15f, z), sag, Mat("#2A2420"));
+                foreach (var px in new[] { homeX - 3.9f, homeX + 3.9f }) Cyl(fm, W(px, homeH + 1.1f, z), 0.04f, 2.2f, Mat("#5A5550"), "light_pole");
+            }
+            for (int i = 0; i < 20; i++) { var g = AddGlow(fm, W(homeX - 3.9f + i * 0.41f, homeH + 0.72f, -6.1f), new Vector3(0.1f, 0.1f, 0.1f), i % 2 == 0 ? "#FFE08A" : "#FF8FC7", 2.6f); g.Backed = true; }
             famousGroup.SetActive(false);
+
+            // From the dukaan up the thela retires: a small takeaway counter by the queue keeps the line moving.
+            counterGroup = new GameObject("takeaway_counter"); counterGroup.transform.SetParent(transform, false);
+            var ct = counterGroup.transform;
+            Box(ct, W(p.X, 0.55f, p.Z), new Vector3(1.6f, 1.1f, 0.7f), MatTex("#8A5A32", "wood", new Vector2(1, 1)), "counter_body");
+            Box(ct, W(p.X, 1.12f, p.Z), new Vector3(1.7f, 0.05f, 0.8f), Mat("#C9C6BE", 0.7f, 0.75f), "counter_top");
+            BuildSign(ct, W(p.X, 0.62f, p.Z + 0.37f), new Vector2(1.5f, 0.3f), "TAKEAWAY", "", "#8E2B25", "#FFF3D6");
+            Cyl(ct, W(p.X - 0.45f, 1.32f, p.Z), 0.13f, 0.32f, Mat("#B8B6B0", 0.6f, 0.7f), "counter_kettle");
+            counterGroup.SetActive(false);
+            foreach (Transform c in Dhaba.transform) if (c.name == "takhta" || c.name == "dari") takhtaParts.Add(c.gameObject);
+        }
+
+        // ---------- the build moment ----------
+        public bool Building => building != null;
+
+        public void BeginBuild(Sim.Sim sim, string tier)
+        {
+            building = tier;
+            RefreshStage(sim);
+            StartCoroutine(Build(sim, tier));
+        }
+
+        System.Collections.IEnumerator Build(Sim.Sim sim, string tier)
+        {
+            bool big = tier == "dukaan" || tier == "restaurant" || tier == "famous";
+            var p = d.District.Pitch;
+            float cx = big ? homeX : p.X + 1.2f, width = big ? 8.4f : 4.2f;
+            float top = tier == "famous" ? homeH + 2.6f : tier == "restaurant" ? 8.2f : big ? 4.4f : 3.0f;
+            float z0 = big ? -5.6f : p.Z + 0.9f;
+            var scaffold = new GameObject("scaffold").transform; scaffold.SetParent(transform, false);
+            var bamboo = Mat("#B8935A", 0.2f);
+            for (int i = 0; i <= 6; i++)
+            {
+                float x = cx - width / 2 + i * width / 6;
+                Cyl(scaffold, W(x, top / 2, z0), 0.05f, top, bamboo, "bamboo");
+                Cyl(scaffold, W(x, top / 2, z0 + 0.6f), 0.05f, top, bamboo, "bamboo");
+            }
+            for (float y = 1.2f; y < top; y += 1.4f)
+            {
+                Box(scaffold, W(cx, y, z0), new Vector3(width, 0.06f, 0.06f), bamboo, "bamboo_h");
+                Box(scaffold, W(cx, y, z0 + 0.3f), new Vector3(width, 0.04f, 0.6f), MatTex("#8A6A42", "wood", new Vector2(4, 1)), "plank");
+            }
+            Box(scaffold, W(cx, top / 2, z0 - 0.05f), new Vector3(width * 0.95f, top * 0.9f, 0.02f), Mat("#3E8E5E", 0.1f), "green_net");
+            var dust = Dust(scaffold, W(cx, 0.6f, z0 + 0.4f), width);
+            yield return new WaitForSecondsRealtime(2.2f);
+            if (dust != null) dust.Emit(60);
+            yield return new WaitForSecondsRealtime(0.3f);
+            Destroy(scaffold.gameObject, 1.5f);
+            scaffold.gameObject.SetActive(false);
+            building = null;
+            RefreshStage(sim);
+            Built?.Invoke(tier);
+        }
+
+        public event System.Action<string> Built;
+
+        ParticleSystem Dust(Transform parent, Vector3 pos, float width)
+        {
+            var mat = Resources.Load<Material>("Materials/KT_Particle");
+            if (mat == null) return null;
+            mat = new Material(mat);
+            foreach (var prop in new[] { "_BaseMap", "_MainTex" }) if (mat.HasProperty(prop)) mat.SetTexture(prop, Paint.Get("soft"));
+            var go = new GameObject("dust"); go.transform.SetParent(parent, false); go.transform.localPosition = pos;
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.startLifetime = 1.6f; main.startSpeed = 1.2f; main.startSize = 1.1f; main.startColor = new Color(0.78f, 0.68f, 0.52f, 0.45f);
+            main.simulationSpace = ParticleSystemSimulationSpace.World; main.maxParticles = 120;
+            var em = ps.emission; em.rateOverTime = 18;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(width, 0.2f, 0.6f);
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) }, new[] { new GradientAlphaKey(0, 0), new GradientAlphaKey(1, 0.2f), new GradientAlphaKey(0, 1) });
+            col.color = g;
+            var rend = go.GetComponent<ParticleSystemRenderer>(); rend.sharedMaterial = mat; rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ps.Play();
+            return ps;
         }
 
         Practical dukaanLight;
@@ -561,10 +659,15 @@ namespace KarachiTycoon.Game
         public void RefreshStage(Sim.Sim sim)
         {
             var s = sim.S;
-            int tier = sim.TierIndex;
-            bool AtLeast(string id) => sim.AtLeast(id);
+            // While a new place is being built, the street still shows the old one (under scaffolding).
+            int tier = sim.TierIndex - (Building ? 1 : 0);
+            bool AtLeast(string id) => tier >= sim.Tiers.FindIndex(t => t.Id == id);
             Dhaba.SetActive(AtLeast("dhaba"));
-            cart2Group.SetActive(AtLeast("cart2"));
+            cart2Group.SetActive(AtLeast("cart2") && !AtLeast("dukaan"));
+            // From the dukaan up the building is the hero: the thela retires, a takeaway counter remains.
+            Stall.SetActive(!AtLeast("dukaan"));
+            counterGroup.SetActive(AtLeast("dukaan"));
+            foreach (var t in takhtaParts) t.SetActive(!AtLeast("dukaan"));
             // Stools belong to the bara thela; the dhaba's chairs replace them.
             foreach (Transform c in cart2Group.transform) if (c.name.StartsWith("stool")) c.gameObject.SetActive(!AtLeast("dhaba"));
             dukaanGroup.SetActive(AtLeast("dukaan"));

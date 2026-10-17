@@ -83,18 +83,28 @@ namespace KarachiTycoon.Game
             gc.Rig.ViewX = gc.Data.District.Pitch.X; gc.Rig.ViewWidth = gc.Rig.MinWidth;
             yield return new WaitForSecondsRealtime(0.5f);
             yield return Shot("06_thela");
-            // The business ladder: every tier rebuilt on the street, in the evening light.
-            float px = gc.Rig.ViewX, pw = gc.Rig.ViewWidth;
-            gc.Rig.ViewX = 3.5f; gc.Rig.ViewWidth = Settings.PhoneLayout ? 13 : 26;
+            // The business ladder: every tier from the same default camera (the game frames each tier itself),
+            // with the clock stopped so every shot has the same light.
+            gc.SetSpeed(0);
             foreach (var tier in new[] { "cart2", "dhaba", "dukaan", "restaurant", "famous" })
             {
-                gc.Sim.DebugTier(tier);
+                // The restaurant goes up with the build moment: scaffolding and dust, then the reveal.
+                bool build = tier == "restaurant";
+                gc.Sim.DebugTier(tier, true, build);
+                if (build) { yield return new WaitForSecondsRealtime(1.2f); yield return Shot("11_build_" + tier); yield return new WaitForSecondsRealtime(1.6f); }
                 for (int i = 0; i < 6 && !gc.Sim.S.DayOver; i++) gc.Sim.Tick(0.5f);
                 yield return new WaitForSecondsRealtime(0.7f);
                 yield return Shot("11_tier_" + tier);
                 if (tier == "dukaan") { ui.DebugShow("Shop"); yield return new WaitForSecondsRealtime(0.6f); yield return Shot("12_upgrades"); ui.DebugShow("none"); }
             }
-            gc.Rig.ViewX = px; gc.Rig.ViewWidth = pw;
+            gc.SetSpeed(1);
+            ui.DebugShow("district");
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("13_district");
+            ui.DebugShow("city");
+            yield return new WaitForSecondsRealtime(0.6f);
+            yield return Shot("14_city");
+            ui.DebugShow("none");
             gc.Sim.DebugTier("cart", false);
             gc.Rig.ViewX = vx; gc.Rig.ViewWidth = vw;
             if (!Offscreen) yield return InputTest(gc, ui);
@@ -189,6 +199,13 @@ namespace KarachiTycoon.Game
         IEnumerator Click(VisualElement root, VisualElement target)
         {
             if (target == null) { Debug.Log("[ShotRunner] click target missing"); yield break; }
+            if (Offscreen)
+            {
+                // No pointer reaches an offscreen panel: press the button as a keyboard "submit" would.
+                using (var e = NavigationSubmitEvent.GetPooled()) { e.target = target; target.SendEvent(e); }
+                yield return null; yield return null;
+                yield break;
+            }
             var mouse = Mouse.current ?? InputSystem.AddDevice<Mouse>();
             float k = Screen.width / root.layout.width;
             var c = target.worldBound.center;

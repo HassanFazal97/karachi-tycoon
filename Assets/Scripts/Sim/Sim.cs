@@ -76,6 +76,7 @@ namespace KarachiTycoon.Sim
         public event Action<string, int> FriendLevelUp;    // regular id, new level (1-3)
         public event Action<CardDef> CardDrawn;
         public event Action<QuestDef> QuestStarted, QuestDone;
+        public event Action<string> TierBuilt;   // a real upgrade (not a load or a debug jump): play the build
 
         public Sim(GameData data, Func<double> random = null)
         {
@@ -387,6 +388,7 @@ namespace KarachiTycoon.Sim
             if (!TierReady) { if (S.Cash < t.SetupCost) Noticed?.Invoke(new Notice { Kind = "warn", Key = "noCash" }); return false; }
             S.Cash -= t.SetupCost; Today.Setup += t.SetupCost;
             S.Stage = t.Id;
+            TierBuilt?.Invoke(t.Id);
             if (AtLeast("dhaba")) S.Act = Math.Max(S.Act, 2);
             BuildSeats();
             StageChanged?.Invoke();
@@ -396,9 +398,10 @@ namespace KarachiTycoon.Sim
         }
 
         // For tests and tools: jump to a tier with every track at its cap.
-        public void DebugTier(string id, bool maxTracks = true)
+        public void DebugTier(string id, bool maxTracks = true, bool build = false)
         {
             S.Stage = id;
+            if (build) TierBuilt?.Invoke(id);
             if (AtLeast("dhaba")) S.Act1Done = true;
             if (AtLeast("dukaan")) S.Act2Done = true;
             if (maxTracks)

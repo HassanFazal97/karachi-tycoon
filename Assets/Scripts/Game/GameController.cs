@@ -81,6 +81,7 @@ namespace KarachiTycoon.Game
             Street = new GameObject("Burns Road").AddComponent<StreetBuilder>();
             Street.Build(Data, Sim.S);
             Street.RefreshStage(Sim);
+            Rig.FrameTier(Sim.TierIndex, Settings.PhoneLayout);
             gameObject.AddComponent<DayCycle>().Init(Sim, Street, Rig.Cam);
             new GameObject("People").AddComponent<PeopleView>().Init(Sim, Rig.Cam);
             new GameObject("Ambient").AddComponent<Ambient>().Init(Sim, Street);
@@ -91,7 +92,9 @@ namespace KarachiTycoon.Game
             Sim.StageChanged += () => Street.RefreshStage(Sim);
             Sim.Shouted += () => Toast("\"Aao bhai, garma garam!\" People nearby turn to look.", "good");
             Sim.UpgradeBought += id => { Street.RefreshStage(Sim); Analytics.Event("upgrade_buy", ("track", id), ("level", Sim.Level(id)), ("day", Sim.S.Day)); };
-            Sim.StageChanged += () => Analytics.Event("tier_up", ("tier", Sim.S.Stage), ("day", Sim.S.Day));
+            Sim.StageChanged += () => { Analytics.Event("tier_up", ("tier", Sim.S.Stage), ("day", Sim.S.Day)); Rig.FrameTier(Sim.TierIndex, Settings.PhoneLayout); };
+            // Buying a new place is an event: scaffolding and dust, then the reveal.
+            Sim.TierBuilt += id => Street.BeginBuild(Sim, id);
             Sim.FriendLevelUp += (id, level) =>
             {
                 var r = Data.Story.Regulars.Find(x => x.Id == id);

@@ -12,7 +12,7 @@ namespace KarachiTycoon.Game
     public class CameraRig : MonoBehaviour
     {
         public Camera Cam;
-        public float ViewX, ViewWidth = 30;
+        public float ViewX, ViewWidth = 30, YOffset;
         public const float MinX = -20, MaxX = 20;
         // Portrait phones frame the cart and queue tall, so they see a narrower slice of the road.
         public float MinWidth = 12, MaxWidth = 50;
@@ -93,6 +93,29 @@ namespace KarachiTycoon.Game
             return Vector2.Distance(a, b);
         }
 
+        // The district view: pull right back to see the whole food street, and return to where we were.
+        float savedX, savedWidth, savedMax, savedY;
+        public bool District { get; private set; }
+        public void SetDistrictView(bool on, bool phone)
+        {
+            if (on == District) return;
+            District = on;
+            if (on) { savedX = ViewX; savedWidth = ViewWidth; savedY = YOffset; savedMax = MaxWidth; MaxWidth = 80; ViewX = 0; ViewWidth = phone ? 30 : 72; YOffset = phone ? 6 : 2; }
+            else { ViewX = savedX; ViewWidth = savedWidth; YOffset = savedY; MaxWidth = savedMax; }
+        }
+
+        // Frame the player's whole frontage for their tier: from the thela up to the restaurant's roof.
+        static readonly float[] DeskWidth = { 30, 30, 30, 22, 26, 30 }, PhoneWidth = { 13, 13, 14, 14, 16, 18 }, Lift = { 0, 0, 0, 0.6f, 2.2f, 3.6f };
+        public void FrameTier(int tier, bool phone)
+        {
+            if (District || tier < 0) return;
+            int i = Mathf.Clamp(tier, 0, Lift.Length - 1);
+            ViewWidth = phone ? PhoneWidth[i] : DeskWidth[i];
+            YOffset = phone ? Lift[i] * 1.6f : Lift[i];
+            ViewX = tier >= 3 ? 3.2f : 1.5f;
+            velocity = 0;
+        }
+
         public void Pan(float dx) { ViewX = Mathf.Clamp(ViewX + dx, MinX, MaxX); velocity = 0; }
         public void Zoom(float factor) => ViewWidth = Mathf.Clamp(ViewWidth * factor, MinWidth, MaxWidth);
 
@@ -112,7 +135,7 @@ namespace KarachiTycoon.Game
             // pixelWidth/Height follow a target texture too (headless screenshots).
             float aspect = (float)Cam.pixelWidth / Mathf.Max(1, Cam.pixelHeight);
             Cam.orthographicSize = ViewWidth / aspect / 2;
-            var target = W(ViewX, 3.2f + ViewWidth * 0.06f, -3.5f);
+            var target = W(ViewX, 3.2f + ViewWidth * 0.06f + YOffset, -3.5f);
             var dir = new Vector3(0.22f, 0.6f, -0.77f).normalized;
             // Orthographic, so distance only matters for shadows: close enough to stay inside the shadow distance.
             Cam.transform.position = target + dir * 45;

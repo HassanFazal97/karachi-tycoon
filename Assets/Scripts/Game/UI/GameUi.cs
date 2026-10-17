@@ -100,6 +100,7 @@ namespace KarachiTycoon.Game
             sim.StageChanged += RefreshSheet;
             sim.UpgradeBought += _ => RefreshSheet();
             sim.GoalDone += OnGoalDone;
+            gc.Street.Built += t => Stamp("MUBARAK!", $"Your {sim.Stage.Name} is open");
             HookStory();
             sim.Bubble += OnServeBubble;
             Rebuild();
@@ -131,6 +132,7 @@ namespace KarachiTycoon.Game
             UpdateToasts();
             UpdateAdOverlay();
             UpdateCoach();
+            UpdatePins();
             UpdateStory();
             Keyboard();
         }
@@ -162,6 +164,9 @@ namespace KarachiTycoon.Game
             if (what == "settings") OpenSettings();
             else if (what == "act1") OpenActCard(1);
             else if (what == "kitaab") OpenKitaab();
+            else if (what == "district") OpenDistrict();
+            else if (what == "city") OpenCity();
+            if (what == "none") CloseDistrict();
             else if (Tabs.Any(t => t.id == what)) OpenSheet(what);
         }
 
@@ -171,7 +176,8 @@ namespace KarachiTycoon.Game
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb == null || !gc.Playing) return;
             bool Pressed(Key k) => kb[k].wasPressedThisFrame;
-            if (Pressed(Key.Escape)) { if (modal == "settings") CloseModal(); else if (sheetOpen != null) CloseSheet(); else if (modal == null) OpenSettings(); }
+            if (Pressed(Key.Escape)) { if (modal == "settings" || modal == "city") CloseModal(); else if (sheetOpen != null) CloseSheet(); else if (DistrictOpen) CloseDistrict(); else if (modal == null) OpenSettings(); }
+            if (modal == null && Pressed(Key.N)) ToggleDistrict();
             if (modal != null) return;
             if (Pressed(Key.Space)) gc.TogglePause();
             if (Pressed(Key.Digit1)) gc.SetSpeed(1);
@@ -416,11 +422,15 @@ namespace KarachiTycoon.Game
                 var zone = Div("col", "aao-zone").Ghost().With(adShout, aao);
                 dock.Insert(2, zone);
                 bottom.With(dock);
-                hud.Add(Div("speed-corner").Ghost().With(speed));
+                var mapBtn = IconBtn("map", null, ToggleDistrict, "speed-btn").Named("dock-Map");
+                hud.Add(Div("speed-corner").Ghost().With(mapBtn, speed));
             }
             else
             {
                 var save = IconBtn("save", "Save", () => { gc.Save(); gc.Toast("Saved. Loading resumes from the start of today.", "tip"); }, "dock-btn");
+                var mapBtn = IconBtn("map", "Map", ToggleDistrict, "dock-btn").Named("dock-Map");
+                mapBtn.Add(Text("N", "key-hint"));
+                dock.Add(mapBtn);
                 bottom.With(Div("toolbar").With(dock, Div("toolbar-sep"), Div("col", "aao-zone").With(aao), adShout, Div("toolbar-sep"), save));
             }
             BuildFeedback(bannerRow, row1);

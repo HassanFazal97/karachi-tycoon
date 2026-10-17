@@ -182,6 +182,10 @@ namespace KarachiTycoon.Game
                     }
                     p.BeginPath(); p.MoveTo(P(.5f, .62f)); p.LineTo(P(.5f, .88f)); p.MoveTo(P(.32f, .9f)); p.LineTo(P(.68f, .9f)); p.Stroke();
                     break;
+                case "map": // a folded map with a pin
+                    Poly(p, P(.1f, .22f), P(.37f, .12f), P(.63f, .22f), P(.9f, .12f), P(.9f, .78f), P(.63f, .88f), P(.37f, .78f), P(.1f, .88f)); p.Stroke();
+                    p.BeginPath(); p.MoveTo(P(.37f, .12f)); p.LineTo(P(.37f, .78f)); p.MoveTo(P(.63f, .22f)); p.LineTo(P(.63f, .88f)); p.Stroke();
+                    break;
                 case "target": // goals
                     Circle(p, P(.5f, .5f), s * .38f); p.Stroke();
                     Circle(p, P(.5f, .5f), s * .2f); p.Stroke();
