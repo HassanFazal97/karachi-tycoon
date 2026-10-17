@@ -269,6 +269,46 @@
 .title-card .btn-primary { margin-top: 14px; }
 .title-card .btn-big { margin-top: 8px; }
 
+/* ---------- Uncle Rasheed's coaching ---------- */
+.coach-dim { position: absolute; background-color: rgba(15, 9, 5, 0.62); }
+.coach-ring { position: absolute; border-width: 3px; border-color: #F2C24A; border-radius: 14px; transition-property: scale, border-color; transition-duration: 0.5s; }
+.coach-ring.pulse { scale: 1.08 1.08; border-color: #FFFFFF; }
+.coach-row { position: absolute; left: 0; right: 0; flex-direction: row; justify-content: center; }
+.coach-row.top { top: 110px; }
+.coach-row.bottom { bottom: 120px; }
+.coach-card {
+    width: 480px; padding: 12px 14px; border-radius: 14px;
+    background-color: var(--paper); border-width: 2px; border-color: var(--maroon);
+    opacity: 0; translate: 0 12px; transition-property: opacity, translate; transition-duration: 0.25s;
+}
+.coach-card.in { opacity: 1; translate: 0 0; }
+.coach-who { color: var(--maroon); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px; }
+.coach-title { color: var(--dark); font-size: 18px; -unity-font-style: bold; }
+.coach-text { color: var(--dark); font-size: 15px; margin-top: 6px; }
+.coach-actions { margin-top: 10px; }
+.btn-link { background-color: rgba(0, 0, 0, 0); border-width: 0; color: var(--muted); -unity-font-style: normal; font-size: 13px; padding: 4px 6px; }
+.btn-link:hover { background-color: rgba(0, 0, 0, 0.06); }
+.toast-action { margin-left: 8px; background-color: var(--gold); color: var(--dark); flex-shrink: 0; }
+
+/* cold open: sepia memories */
+.coldopen { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: #2A1D15; align-items: center; justify-content: center; }
+.coldopen-card { width: 560px; padding: 28px; border-radius: 16px; background-color: #D9C3A0; border-width: 2px; border-color: #8C6A44; align-items: center; opacity: 0; translate: 0 10px; transition-property: opacity, translate; transition-duration: 0.45s; }
+.coldopen-card.in { opacity: 1; translate: 0 0; }
+.coldopen-icon { width: 120px; height: 120px; color: #5C4127; margin-bottom: 12px; }
+.coldopen-title { font-size: 26px; -unity-font-style: bold; color: #4A3220; }
+.coldopen-text { font-size: 17px; color: #4A3220; -unity-text-align: middle-center; margin: 10px 0 14px 0; }
+.coldopen-dots { margin-bottom: 12px; }
+.dot { width: 9px; height: 9px; border-radius: 5px; margin: 0 4px; background-color: rgba(74, 50, 32, 0.3); }
+.dot.on { background-color: #4A3220; }
+.coldopen-actions { align-self: stretch; }
+.coldopen .btn-link { color: #6B4E33; }
+
+/* Dada ki Kitaab */
+.kitaab { max-height: 86%; }
+.kitaab-icon { width: 28px; height: 28px; color: var(--maroon); margin-right: 8px; }
+.kitaab-scroll { flex-shrink: 1; margin-top: 8px; }
+.kitaab-tip { border-left-width: 3px; border-color: var(--red); padding: 4px 0 4px 10px; margin-bottom: 10px; }
+
 /* =========================================================
    PHONE (portrait, ~390x844 points, one hand): two-row top bar, a bottom
    dock with the shout in the middle, speed in the corner, half-height
@@ -353,3 +393,12 @@
 .phone .title-strip { height: 16px; }
 .phone .choice { min-height: 44px; }
 .phone .title-card .seg-btn { min-height: 44px; }
+
+.phone .coach-row { padding: 0 10px; }
+.phone .coach-row.top { top: 118px; }
+.phone .coach-row.bottom { bottom: 150px; }
+.phone .coach-card { width: 100%; }
+.phone .coach-text { font-size: 14px; }
+.phone .coldopen-card { width: 90%; padding: 22px 18px; }
+.phone .coldopen-icon { width: 96px; height: 96px; }
+.phone .toast-action { min-height: 36px; }

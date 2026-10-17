@@ -24,6 +24,8 @@ namespace KarachiTycoon.Sim
         public int Expenses, Net, CashEnd;
         public bool TipsDoubled;
         public List<Note> Notes = new();
+        // Act 1 safety net: what Uncle Rasheed lent so the galla still covers tomorrow's stock.
+        public int Loan;
     }
 
     public class GameState
@@ -49,6 +51,14 @@ namespace KarachiTycoon.Sim
         public Ledger LastLedger;
 
         // Free-to-play (design doc §22). Coins are the premium currency; NoAds removes interstitials.
+        // Onboarding. Null for saves made before the tutorial existed: they skip it and keep everything unlocked.
+        // "day1" while the guided first day runs, "done" afterwards (also when skipped).
+        public string Tutorial;
+        // One-time hints and unlock explainers already shown.
+        public List<string> Seen = new();
+        // Behaviour, for gentle reminders ("never shouted by day 3").
+        public int Shouts, PriceChanges;
+
         public int Coins;
         public bool NoAds;
         // Bought "Dada ki Barkat": every sale earns double.

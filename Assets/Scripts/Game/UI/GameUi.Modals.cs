@@ -59,7 +59,9 @@ namespace KarachiTycoon.Game
 
             var net = Text("", "khata-net");
             var stamp = Text("", "stamp");
-            scroll.Add(Div("row", "khata-total").With(Text("Net for the day", "khata-head2", "grow"), net, stamp));
+            scroll.Add(Div("row", "khata-total").Named("khata-total").With(Text("Net for the day", "khata-head2", "grow"), net, stamp));
+            if (l.Loan > 0) scroll.Add(Div("row", "khata-uncle").With(Div("portrait").With(new Icon("staff")),
+                Text($"Uncle Rasheed lent you {Rs(l.Loan)} so the kiryana can deliver tomorrow. \"Pay me back when Burns Road knows your name.\"", "khata-quote")));
             modalBind.Do(() =>
             {
                 int n = l.Net + (l.TipsDoubled ? l.Tips : 0);
@@ -124,6 +126,7 @@ namespace KarachiTycoon.Game
             box.Add(Seg(new[] { ("0.85", "Small"), ("1", "Medium"), ("1.2", "Large") }, Settings.UiScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
                 v => Settings.UiScale = float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)));
 
+            if (gc.Playing) box.Add(IconBtn("book", "Dada ki Kitaab: every tip", () => { CloseModal(); OpenKitaab(); }, "wide"));
             if (!phone) box.Add(Text("Keys: Space pause · 1 2 3 speed · A/D pan · +/- zoom · M S H B panels · Q shout · Esc close", "muted", "small", "keys"));
 
             var actions = Div("row", "modal-actions");

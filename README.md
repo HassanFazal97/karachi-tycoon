@@ -57,6 +57,22 @@ dotnet run --project Tools/BalanceRunner -- ghee 7
 
 It plays a simple strategy for 7 days (`ghee` or `oil`) and prints each day's ledger and when each chapter goal is met. With ghee, Act 1 is done on day 3 and Act 2 on day 8, the same as the browser prototype.
 
+## The first ten minutes (tutorial)
+
+New players get Uncle Rasheed's guided first day (upgrade plan, "The first ten minutes"). Anyone with a save can choose "Skip" on the title screen.
+
+- **Cold open:** three sepia cards of Dada's story, skippable.
+- **The guided day:** Uncle is the first customer. The player puts chai on the board, watches him get served, sees the galla, then meets three easy customers (the street is quieter and more patient until Maghrib, with no load shedding or rivals). After that come the lessons: shout "Aao bhai", fix a "Mehenga hai!" price, raise milk's top-up level and buy up to it, speed up the afternoon. The Maghrib rush is the player's alone; then a guided hisaab and the first goal card.
+- **How it looks:** the screen dims except for the one thing to tap, with a pulsing ring around it and Uncle's card on the far side. Lessons pause the clock. Every card has "Skip tutorial".
+- **Panels unlock as they are taught:** Menu and Supplies during day 1, Staff on day 2, the Shop with Act 1, ghee vs oil with the dhaba. The Store stays hidden on the guided day. Each unlock gets one explainer card.
+- **One-time hints from Uncle:** first walkout, sell-out, outage, long line, "Mehenga hai!" and losing day; on day 3, a nudge if the player has never shouted or changed a price. Hints that point at a panel have an "Open ..." button. Every tip is collected in **Dada ki Kitaab** (pause menu).
+- **Gentle failure:** in Act 1, if the night's bills leave less than a day's stock, Uncle lends the difference (shown on the hisaab).
+- **Analytics:** `cold_open`, `tutorial_start`, `tutorial_step` (id, index, seconds), `tutorial_skip`, `tutorial_complete`, `unlock`, `hint`, `kitaab_open`.
+- **Where things live:** the words are in `Resources/Data/tutorial.json` (steps, hints, unlock cards, Kitaab). When each step starts and ends is in `TutorialDirector.cs`. The overlay is `GameUi.Coach.cs`. The Sim's part (`TutorialDay`, `HoldCustomers`, `NoRefusals`, the quiet street and the Act 1 floor) stays plain C#.
+- **Old saves** (from before the tutorial) skip it and keep every panel.
+
+The test build plays the whole tutorial by itself: add `-kt-scenario tutorial` to the `ShotRunner` command below.
+
 ## Ads and purchases
 
 Ads live in `Assets/Scripts/Game/Ads` (design doc §22):
@@ -90,7 +106,7 @@ Analytics events (`session_start`, `game_start`, `panel_open`, `day_end`, `act_d
 
 ## Next steps
 
-See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, phone and desktop layouts, touch camera, audio, analytics hooks). Next: M2, the guided first day with Uncle Rasheed and tap to serve.
+See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, portrait phone and landscape desktop layouts, touch camera, audio, analytics hooks), the ads refactor, and M2 (the guided first day). Next: M3, daily goals, visible upgrades and feedback.
 
 - Set up URP with bloom for the tube lights and sodium lamps.
 - Swap the primitive people and buildings for low-poly models (art style guide in the design doc).

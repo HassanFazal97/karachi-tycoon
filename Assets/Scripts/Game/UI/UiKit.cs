@@ -64,6 +64,8 @@ namespace KarachiTycoon.Game
             return e;
         }
 
+        public static T Named<T>(this T e, string name) where T : VisualElement { e.name = name; return e; }
+
         public static T Show<T>(this T e, bool on) where T : VisualElement
         {
             e.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
@@ -112,6 +114,13 @@ namespace KarachiTycoon.Game
         {
             int last = -1;
             updates.Add(() => { int v = f() ? 1 : 0; if (v != last) { last = v; e.Show(v == 1); } });
+        }
+
+        // Like Visible, but keeps the element's space (phone docks keep their slots).
+        public void Present(VisualElement e, Func<bool> f)
+        {
+            int last = -1;
+            updates.Add(() => { int v = f() ? 1 : 0; if (v != last) { last = v; e.style.visibility = v == 1 ? Visibility.Visible : Visibility.Hidden; } });
         }
 
         public void Class(VisualElement e, string cls, Func<bool> f)

@@ -10,7 +10,9 @@ namespace KarachiTycoon.Game
 {
     // Automated screenshots for checking the UI without a person at the keyboard.
     // Run a build with:  -kt-shots <folder>  (and optionally -kt-layout phone|desktop)
-    // It plays a new game for a while, opens every panel, ends the day and quits. It never saves.
+    // Default: plays a new game (tutorial skipped) for a while, opens every panel, ends the day and quits.
+    // With -kt-scenario tutorial: starts from the title, plays Uncle Rasheed's guided day by tapping
+    // whatever he points at, and screenshots every step. It never saves.
     public class ShotRunner : MonoBehaviour
     {
         string dir;
@@ -35,11 +37,14 @@ namespace KarachiTycoon.Game
         IEnumerator Start()
         {
             Directory.CreateDirectory(dir);
+            // Each run starts like a first launch (test builds have their own PlayerPrefs).
+            PlayerPrefs.DeleteKey("kt_save_v1");
             yield return new WaitForSecondsRealtime(1.5f);
             yield return Shot("01_title");
 
             var gc = FindAnyObjectByType<GameController>();
             var ui = gc.GetComponent<GameUi>();
+            if (Arg("-kt-scenario") == "tutorial") { yield return Tutorial(gc, ui); Application.Quit(); yield break; }
             gc.StartGame(false, 0, "pota");
             yield return Advance(gc, 1060);
             gc.Toast("Uncle Rasheed: \"Chai mein elaichi kam hai, beta. Dada ki tarah banao.\"", "uncle");
@@ -58,6 +63,70 @@ namespace KarachiTycoon.Game
             yield return new WaitForSecondsRealtime(0.6f);
             yield return Shot("04_ledger");
             Application.Quit();
+        }
+
+        IEnumerator Tutorial(GameController gc, GameUi ui)
+        {
+            var root = ui.GetComponentInChildren<UIDocument>().rootVisualElement;
+            var tutor = gc.GetComponent<TutorialDirector>();
+            yield return Click(root, root.Query<Button>(className: "seg-btn").Where(b => b.text.StartsWith("With Uncle")).First());
+            yield return Click(root, root.Query<Button>(className: "btn-primary").Where(b => b.text.StartsWith("Start")).First());
+            for (int card = 1; card <= 3; card++)
+            {
+                yield return new WaitForSecondsRealtime(0.7f);
+                yield return Shot($"t00_coldopen_{card}");
+                yield return Click(root, root.Q(className: "coldopen-card").Q<Button>(className: "btn-primary"));
+            }
+            float start = Time.realtimeSinceStartup;
+            string last = null; int n = 0, guard = 0;
+            while (tutor.Active && guard++ < 3000)
+            {
+                var st = tutor.Current;
+                if (st == null) break;
+                bool showing = !st.Hidden && ui.CoachVisible;
+                if (st.Id != last && showing)
+                {
+                    last = st.Id; n++;
+                    yield return new WaitForSecondsRealtime(0.7f);
+                    yield return Shot($"t{n:00}_{st.Id}");
+                }
+                if (showing && st.Button != null) yield return Click(root, root.Q(className: "coach-card").Q<Button>(className: "btn-primary"));
+                else if (showing && st.Target != null) yield return Click(root, root.Q(st.Target));
+                else
+                {
+                    // Let the day run (quickly) until the next lesson.
+                    for (int i = 0; i < 12 && !ui.Blocking && !gc.Sim.S.DayOver; i++) gc.Sim.Tick(0.5f);
+                    yield return null;
+                }
+                yield return new WaitForSecondsRealtime(showing ? 0.4f : 0.02f);
+            }
+            yield return new WaitForSecondsRealtime(0.6f);
+            yield return Shot("t99_done");
+            // Day 2: the Staff panel unlocks with an explainer card.
+            yield return Click(root, root.Query<Button>(className: "btn-primary").Where(b => b.text.StartsWith("Agla")).First());
+            for (int i = 0; i < 30 && !ui.CoachVisible; i++) yield return new WaitForSecondsRealtime(0.1f);
+            yield return new WaitForSecondsRealtime(0.6f);
+            yield return Shot("t100_day2_unlock");
+            if (ui.CoachVisible) yield return Click(root, root.Q(className: "coach-card").Q<Button>(className: "btn-primary"));
+            ui.DebugShow("kitaab");
+            yield return new WaitForSecondsRealtime(0.6f);
+            yield return Shot("t101_kitaab");
+            Debug.Log($"[ShotRunner] tutorial: finished={!tutor.Active} steps={n} real seconds={Time.realtimeSinceStartup - start:F0} day={gc.Sim.S.Day} served={gc.Sim.S.TotalServed} cash={gc.Sim.S.Cash}");
+        }
+
+        // A synthetic mouse click in the middle of an element.
+        IEnumerator Click(VisualElement root, VisualElement target)
+        {
+            if (target == null) { Debug.Log("[ShotRunner] click target missing"); yield break; }
+            var mouse = Mouse.current ?? InputSystem.AddDevice<Mouse>();
+            float k = Screen.width / root.layout.width;
+            var c = target.worldBound.center;
+            var pos = new Vector2(c.x * k, Screen.height - c.y * k);
+            foreach (var down in new[] { false, true, false })
+            {
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = pos, buttons = (ushort)(down ? 1 : 0) });
+                yield return null; yield return null;
+            }
         }
 
         // Clicks the Menu button and drags the street with synthetic mouse events, then checks the effect.

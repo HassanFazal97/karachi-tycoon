@@ -71,11 +71,11 @@ namespace KarachiTycoon.Game
         }
 
         // ---------- start ----------
-        public void StartGame(bool load, int nameChoice = 0, string hero = "pota")
+        public void StartGame(bool load, int nameChoice = 0, string hero = "pota", bool tutorial = false)
         {
             Sim = new Sim.Sim(Data);
             if (load) Sim.Load(PlayerPrefs.GetString(SaveKey));
-            else Sim.NewGame(Names[nameChoice].en, Names[nameChoice].ur, hero);
+            else Sim.NewGame(Names[nameChoice].en, Names[nameChoice].ur, hero, tutorial);
             ApplyWallet();
             Street = new GameObject("Burns Road").AddComponent<StreetBuilder>();
             Street.Build(Data, Sim.S);
@@ -90,9 +90,10 @@ namespace KarachiTycoon.Game
             Sim.Shouted += () => Toast("\"Aao bhai, garma garam!\" People nearby turn to look.", "good");
             Sim.DayEnded += l => Analytics.Event("day_end", ("day", l.Day), ("net", l.Net), ("served", l.Served), ("walkouts", l.Walkouts), ("refused", l.Refused));
             Sim.ActDone += n => Analytics.Event("act_done", ("act", n), ("day", Sim.S.Day));
-            Analytics.Event("game_start", ("mode", load ? "continue" : "new"), ("day", Sim.S.Day));
+            Analytics.Event("game_start", ("mode", load ? "continue" : "new"), ("day", Sim.S.Day), ("tutorial", Sim.S.Tutorial ?? "legacy"));
             Started?.Invoke();
-            Toast(load ? $"Welcome back. Day {Sim.S.Day} on Burns Road." : "Customers queue at your thela. The bar over each head is their patience; it turns gold while you cook.", "tip");
+            if (load) Toast($"Welcome back. Day {Sim.S.Day} on Burns Road.", "tip");
+            else if (!tutorial) Toast("Customers queue at your thela. The bar over each head is their patience; it turns gold while you cook.", "tip");
         }
 
         void OnNotice(Notice n)
@@ -143,7 +144,7 @@ namespace KarachiTycoon.Game
         AdContext AdContextNow() => new AdContext
         {
             GameDay = Sim?.S.Day ?? 0, Session = Sessions, InGameSensitive = SensitiveMoment,
-            Tutorial = false, NoAds = Wallet.NoAds, AdsSupported = Ads?.Provider.Supported ?? false,
+            Tutorial = Sim?.TutorialDay ?? false, NoAds = Wallet.NoAds, AdsSupported = Ads?.Provider.Supported ?? false,
         };
 
         // ---------- actions the UI calls ----------

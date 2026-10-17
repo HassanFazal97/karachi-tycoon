@@ -83,18 +83,36 @@ namespace KarachiTycoon.Sim
         T Pick<T>(IList<T> list) => list[(int)(R() * list.Count) % list.Count];
 
         // ---------- setup ----------
-        public void NewGame(string shopName, string shopUrdu, string hero)
+        public void NewGame(string shopName, string shopUrdu, string hero, bool tutorial = false)
         {
             var b = D.Balance;
             S = new GameState
             {
                 Minute = b.DayStart, Cash = b.StartCash, Fame = b.StartFame, Auth = b.StartAuth,
                 ShopName = shopName, ShopUrdu = shopUrdu, Hero = hero ?? "pota",
+                Tutorial = tutorial ? "day1" : "done",
             };
             foreach (var d in D.Dishes) { S.Menu[d.Id] = new MenuEntry { Price = d.Price }; S.Xp[d.Id] = 0; S.Unlocked[d.Id] = d.Unlock.Type == "start"; }
             foreach (var i in D.Ingredients) { S.Stock[i.Id] = 0; S.AutoBuy[i.Id] = i.Target; }
+            if (tutorial)
+            {
+                // The guided day sets up its own lessons: the board starts empty (the player puts chai on),
+                // chai is priced a little high (a "Mehenga hai!" to fix), and milk is short (a top-up to learn).
+                foreach (var m in S.Menu.Values) m.On = false;
+                S.Menu["chai"].Price = Dish["chai"].RefPrice + 20;
+                S.AutoBuy["milk_patti"] = 30;
+            }
             StartDay();
         }
+
+        // ---------- guided first day ----------
+        public bool TutorialDay => S.Tutorial == "day1" && S.Day == 1;
+        // Set by the tutorial: no ordinary customers yet (Uncle Rasheed comes first) / nobody refuses a price yet.
+        public bool HoldCustomers, NoRefusals;
+        // Until the first rush the tutorial street is quieter and more patient.
+        public bool Easy => TutorialDay && S.Minute < 1100;
+
+        public void FinishTutorial() { S.Tutorial = "done"; HoldCustomers = false; NoRefusals = false; }
 
         public void Load(string json)
         {
@@ -152,7 +170,7 @@ namespace KarachiTycoon.Sim
         }
 
         public float PatienceOf(Customer c) =>
-            Arch[c.Arch].Patience * Stage.Patience * (S.Staff["chhotu"] ? StaffDefs["chhotu"].Patience : 1);
+            Arch[c.Arch].Patience * Stage.Patience * (S.Staff["chhotu"] ? StaffDefs["chhotu"].Patience : 1) * (Easy ? 2f : 1);
 
         public List<Customer> Queue() => Customers.Where(c => c.State == "queue").ToList();
 
@@ -170,6 +188,7 @@ namespace KarachiTycoon.Sim
                 Outages.Add(new Outage { From = from, To = from + b.Outage.MinLen + R() * (b.Outage.MaxLen - b.Outage.MinLen) });
             }
             uncleTimes = new List<float> { 440 + R() * 30, 1100 + R() * 40 };
+            if (TutorialDay) { Outages.Clear(); uncleTimes[0] = b.DayStart + 4; }
             wasOut = false;
             seatTaken = new int[D.District.Seats.Length];
             warned.Clear();
@@ -178,6 +197,12 @@ namespace KarachiTycoon.Sim
             Snapshot = JsonConvert.SerializeObject(S);
             DayStarted?.Invoke(S.Day);
         }
+
+        // What tomorrow's dawn delivery costs at the current top-up levels, from empty.
+        public int OneDayOfStock() => NeededIngredients().Sum(k => S.AutoBuy[k] * Ing[k].Cost);
+
+        // The dawn delivery, on demand (the tutorial puts dishes on after dawn has passed).
+        public void RestockNow() => AutoRestock();
 
         void AutoRestock()
         {
@@ -212,6 +237,12 @@ namespace KarachiTycoon.Sim
                 if (lost > 0) { t.Wastage[ing.Id] = lost; t.WastageRs += lost * ing.Cost; S.Stock[ing.Id] -= lost; }
             }
             S.Cash -= t.Rent + t.Wages + (int)Math.Round(t.Fuel);
+            // Act 1 never ends the game: if the galla can't buy a day's stock, Uncle Rasheed tops it up.
+            if (S.Stage == "cart")
+            {
+                int floor = OneDayOfStock();
+                if (S.Cash < floor) { t.Loan = floor - S.Cash; S.Cash = floor; }
+            }
             t.Expenses = t.StockBought + t.FatCost + t.Wages + t.Rent + (int)Math.Round(t.Fuel);
             t.Net = t.Revenue + t.Tips - t.Expenses - t.Setup;
             t.FameEnd = S.Fame; t.AuthEnd = S.Auth; t.CashEnd = S.Cash;
@@ -230,7 +261,9 @@ namespace KarachiTycoon.Sim
         public void SetPrice(string id, int price)
         {
             var d = Dish[id];
+            int before = S.Menu[id].Price;
             S.Menu[id].Price = (int)Clamp((float)Math.Round(price / 10f) * 10, d.Min, d.Max);
+            if (S.Menu[id].Price != before) S.PriceChanges++;
         }
         public void ToggleDish(string id) => S.Menu[id].On = !S.Menu[id].On;
         public void SetFat(string f) => S.Fat = f;
@@ -289,6 +322,7 @@ namespace KarachiTycoon.Sim
             if (S.Minute < S.AaoReady || S.DayOver) return false;
             S.AaoUntil = S.Minute + a.Duration;
             S.AaoReady = S.Minute + a.Cooldown;
+            S.Shouts++;
             // Some people already walking past on the near side turn around and come over.
             foreach (var c in Customers)
             {
@@ -345,7 +379,8 @@ namespace KarachiTycoon.Sim
 
         void Spawn(float dt)
         {
-            float expected = FootfallRate() / 60f * dt;
+            if (HoldCustomers) return;
+            float expected = FootfallRate() / 60f * dt * (Easy ? 0.45f : 1);
             while (expected > 0)
             {
                 if (R() < Math.Min(1, expected)) SpawnOne();
@@ -417,7 +452,7 @@ namespace KarachiTycoon.Sim
             if (c.Dest == "pass" && c.Near)
             {
                 var rivals = D.District.Rivals.Where(r => r.Slots.Contains(Slot)).ToList();
-                if (rivals.Count > 0 && R() < b.RivalShare)
+                if (rivals.Count > 0 && !TutorialDay && R() < b.RivalShare)
                 {
                     var r = Pick(rivals);
                     c.Dest = "rival"; c.Rival = r.Id;
@@ -484,7 +519,7 @@ namespace KarachiTycoon.Sim
             }
             var main = c.Order[0];
             float ratio = S.Menu[main.Dish].Price / PriceTolerance(main.Dish, a);
-            if (!c.Uncle && R() < Clamp((ratio - 1) / 0.6f, 0, 1))
+            if (!c.Uncle && !NoRefusals && R() < Clamp((ratio - 1) / 0.6f, 0, 1))
             {
                 Today.Refused++; S.Fame = Clamp(S.Fame - 0.001f, 0, 5);
                 Bubble?.Invoke(new BubbleEvent { C = c, Text = "Mehenga hai!", Mood = -1, Key = "tooExpensive" });

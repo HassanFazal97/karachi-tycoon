@@ -1,0 +1,82 @@
+{
+  "coldOpen": [
+    { "icon": "book", "title": "Delhi, 1947", "text": "Your Dada leaves everything behind but one thing: a handwritten book of recipes." },
+    { "icon": "thela", "title": "Burns Road, Karachi", "text": "For forty years his thela is famous for chai and bun kabab. Then, one winter, it goes quiet." },
+    { "icon": "chai", "title": "Today", "text": "The thela is yours. Rs 25,000, a kettle and Dada's book. Burns Road is waking up." }
+  ],
+
+  "steps": [
+    { "id": "hello", "pause": true, "button": "Ji, Uncle",
+      "text": "Assalam-o-alaikum, beta! I am Rasheed. Since 1975 I have had my chai at this spot. Your Dada made it better than anyone. Chalo, let us see what you can do." },
+    { "id": "menu_open", "pause": true, "target": "dock-Menu",
+      "text": "First things first: nothing is on your board. Open the Menu." },
+    { "id": "chai_on", "pause": true, "target": "toggle-chai",
+      "text": "Put chai on. Tap \"Off the board\" next to Doodh patti chai." },
+    { "id": "uncle_first",
+      "text": "I will be your first customer. Watch the bar over my head: it turns gold while you cook. The cooking is automatic; running the business is your job." },
+    { "id": "galla", "pause": true, "target": "galla", "button": "Next",
+      "text": "Paisa in the galla! Every plate goes in here. You pay for stock, rent and wages from it at the end of the day." },
+    { "id": "first_customers",
+      "text": "Here come your first customers. Keep an eye on the line and on their patience bars." },
+    { "id": "shout", "pause": true, "target": "aao",
+      "text": "The street has gone quiet. Shout \"Aao bhai!\" to pull in the people walking past." },
+    { "id": "wait_grumble", "hidden": true },
+    { "id": "price_open", "pause": true, "target": "dock-Menu",
+      "text": "\"Mehenga hai!\" Your Dada sold chai for Rs 80, beta. Open the Menu." },
+    { "id": "price_fix", "pause": true, "target": "price-down-chai",
+      "text": "Bring chai down to Rs 80. The chip turns green at a fair price; \"Pricey\" means some people walk away." },
+    { "id": "price_done", "auto": 5,
+      "text": "Fair price. Watch the next customer smile." },
+    { "id": "wait_milk", "hidden": true },
+    { "id": "supplies_open", "pause": true, "target": "dock-Supplies",
+      "text": "Your milk is nearly finished! Open Supplies." },
+    { "id": "autobuy", "pause": true, "target": "auto-up-milk_patti",
+      "text": "Every dawn the kiryana tops you up to this level. Raise milk to 60. Milk spoils overnight, so do not overdo it." },
+    { "id": "topup", "pause": true, "target": "topup-all",
+      "text": "No need to wait for dawn: tap \"Top up everything\" and the corner shop sends it now." },
+    { "id": "wait_afternoon", "hidden": true },
+    { "id": "speed", "pause": true, "target": "speed-fast",
+      "text": "Afternoons are slow on Burns Road. Speed up time until the evening." },
+    { "id": "wait_maghrib", "hidden": true },
+    { "id": "rush", "pause": true, "button": "Chalo!",
+      "text": "Maghrib. The tube lights come on and the street fills up. This rush is yours, beta. I will be watching from my chair." },
+    { "id": "wait_ledger", "hidden": true },
+    { "id": "hisaab", "pause": true, "target": "khata-total", "button": "Next",
+      "text": "This is your hisaab. Sales minus stock, ghee, wages and rent. MUNAFA means profit; NUQSAN means loss. Your Dada stamped his book every night." },
+    { "id": "goal", "pause": true, "button": "Chalo!", "title": "Your first goal",
+      "text": "Serve 300 customers and earn Rs 75,000. Then the owner upstairs will let you set up a takhta on the pavement. The bar at the top of the screen shows how close you are." }
+  ],
+
+  "hints": {
+    "walkout_tutorial": { "text": "Someone got tired of waiting. It happens, beta; nothing is lost." },
+    "walkout": { "text": "People are walking off before you serve them. A chhotu takes orders while you cook, so the line moves faster.", "action": "Staff" },
+    "soldOut": { "text": "Khatam! Something sold out. Raise its top-up level in Supplies so the dawn delivery brings more.", "action": "Supplies" },
+    "tooExpensive": { "text": "\"Mehenga hai!\" A \"Pricey\" chip on the Menu means some people walk away.", "action": "Menu" },
+    "queueFull": { "text": "The line got so long that people walked past. Serve faster before you shout again." },
+    "outage": { "text": "Load shedding. Everything is slower in the dark. Once you have the dhaba, a generator keeps you going." },
+    "loss": { "text": "A loss today. Look at the Kharcha side: stock that spoils and idle wages eat the galla. In Act 1 I will always lend you enough for tomorrow's stock." },
+    "noShout": { "text": "Three days and not one \"Aao bhai\"! A shout pulls in people walking past. Use it when the street is busy." },
+    "noPrice": { "text": "Prices are not carved in stone. As your Shohrat grows, people happily pay more. Try it on the Menu.", "action": "Menu" }
+  },
+
+  "unlocks": {
+    "Staff": { "title": "Staff", "text": "Chhotu can take orders while you cook. The line moves faster and people wait longer. He costs a daily wage, so hire him when you are busy." },
+    "Shop": { "title": "The Shop", "text": "Your thela has done well. In the Shop you can set up the pavement dhaba, and later buy a generator for load shedding." },
+    "Store": { "title": "The Store", "text": "Dada's trunk and other extras are in the Store. Nothing in it is needed to finish the game." },
+    "fat": { "title": "Desi ghee or oil?", "text": "Now that you run a dhaba, the choice is yours. Ghee tastes better and builds Asli-pan; oil costs less per plate. People notice the difference." }
+  },
+
+  "kitaab": [
+    { "title": "Patience", "text": "The bar over each head is a customer's patience. It turns gold while their order cooks. Empty bars walk away." },
+    { "title": "The galla", "text": "Every sale goes into the galla. Stock, rent and wages come out of it at the end of the day." },
+    { "title": "Aao bhai!", "text": "The shout pulls in people walking past for a while, then needs time to recharge. Use it when the street is busy and your line is short." },
+    { "title": "Prices", "text": "The chip on each dish says how people see the price. Fair is safe; Pricey loses some customers; Too pricey loses many. Fame and Asli-pan let you charge more." },
+    { "title": "Supplies", "text": "The kiryana and the qasai deliver at dawn up to your top-up levels. Milk, dahi and meat spoil overnight, so buy what a day needs." },
+    { "title": "Time", "text": "Mornings (nashta) and evenings are busy; afternoons are slow and Juma brings a lull. Speed up the quiet hours." },
+    { "title": "The hisaab", "text": "At night the ledger shows sales against stock, ghee, wages and rent. MUNAFA is profit, NUQSAN is loss." },
+    { "title": "Staff", "text": "A chhotu speeds up orders and keeps people patient. At the dhaba a karigar cooks nihari. Wages are paid every night." },
+    { "title": "Ghee or oil", "text": "Desi ghee tastes better and builds Asli-pan. Oil is cheaper per plate but people can tell." },
+    { "title": "Load shedding", "text": "Power cuts slow the kitchen and thin the street. A generator at the dhaba keeps things running, for the price of its fuel." },
+    { "title": "Act 1", "text": "Serve 300 customers and earn Rs 75,000 to set up the pavement dhaba. In Act 1 the game never ends: Uncle Rasheed lends you enough for tomorrow's stock." }
+  ]
+}

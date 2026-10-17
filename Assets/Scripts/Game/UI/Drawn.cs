@@ -141,6 +141,19 @@ namespace KarachiTycoon.Game
                         p.BeginPath(); p.MoveTo(P(x, .3f)); p.BezierCurveTo(P(x - .08f, .22f), P(x + .08f, .16f), P(x, .08f)); p.Stroke();
                     }
                     break;
+                case "book": // Dada's recipe book
+                    Poly(p, P(.5f, .22f), P(.86f, .14f), P(.86f, .8f), P(.5f, .88f)); p.Stroke();
+                    Poly(p, P(.5f, .22f), P(.14f, .14f), P(.14f, .8f), P(.5f, .88f)); p.Stroke();
+                    for (int i = 0; i < 3; i++) { p.BeginPath(); p.MoveTo(P(.6f, .34f + i * .14f)); p.LineTo(P(.76f, .31f + i * .14f)); p.Stroke(); }
+                    break;
+                case "thela": // a handcart with an awning
+                    Poly(p, P(.12f, .5f), P(.8f, .5f), P(.8f, .66f), P(.12f, .66f)); p.Stroke();
+                    p.BeginPath(); p.MoveTo(P(.2f, .5f)); p.LineTo(P(.2f, .26f)); p.MoveTo(P(.72f, .5f)); p.LineTo(P(.72f, .26f)); p.Stroke();
+                    Poly(p, P(.1f, .26f), P(.82f, .26f), P(.76f, .16f), P(.16f, .16f)); p.Fill();
+                    p.BeginPath(); p.MoveTo(P(.8f, .58f)); p.LineTo(P(.94f, .5f)); p.Stroke();
+                    Circle(p, P(.3f, .78f), s * .1f); p.Stroke();
+                    Circle(p, P(.64f, .78f), s * .1f); p.Stroke();
+                    break;
                 case "target": // goals
                     Circle(p, P(.5f, .5f), s * .38f); p.Stroke();
                     Circle(p, P(.5f, .5f), s * .2f); p.Stroke();

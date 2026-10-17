@@ -25,7 +25,7 @@ namespace KarachiTycoon.Game
 
         // What is open. Only one modal at a time; the sheet can sit under a modal.
         string modal;
-        public bool Blocking => modal == "settings" || modal == "act1" || modal == "act2";
+        public bool Blocking => modal == "settings" || modal == "act1" || modal == "act2" || modal == "kitaab" || (tutor != null && tutor.Pausing);
 
         public void Init(GameController g)
         {
@@ -59,12 +59,15 @@ namespace KarachiTycoon.Game
             sheetLayer = Div("layer").Ghost();
             toastLayer = Div("layer", "toast-layer").Ghost();
             modalLayer = Div("layer").Ghost();
-            safe.With(hud, sheetLayer, toastLayer, modalLayer);
+            coachLayer = Div("layer").Ghost();
+            safe.With(hud, sheetLayer, toastLayer, modalLayer, coachLayer);
+            tutor = gameObject.AddComponent<TutorialDirector>();
             root.With(world, safe);
 
             gc.Toasted += Toast;
             gc.Started += OnStarted;
             Settings.Changed += OnSettingsChanged;
+            tutor.Init(gc, this);
             Rebuild();
         }
 
@@ -106,6 +109,7 @@ namespace KarachiTycoon.Game
             hud.Clear(); sheetLayer.Clear(); toastLayer.Clear(); modalLayer.Clear();
             hudBind.Clear(); sheetBind.Clear(); modalBind.Clear();
             modal = null; sheetOpen = null;
+            HideCoach();
             toasts.Clear();
             world.Show(gc.Playing);
             if (!gc.Playing) { BuildTitle(); return; }
@@ -120,6 +124,7 @@ namespace KarachiTycoon.Game
             hudBind.Update(); sheetBind.Update(); modalBind.Update();
             UpdateToasts();
             UpdateAdOverlay();
+            UpdateCoach();
             Keyboard();
         }
 
@@ -147,6 +152,7 @@ namespace KarachiTycoon.Game
             CloseModal(); CloseSheet();
             if (what == "settings") OpenSettings();
             else if (what == "act1") OpenActCard(1);
+            else if (what == "kitaab") OpenKitaab();
             else if (Tabs.Any(t => t.id == what)) OpenSheet(what);
         }
 
@@ -211,7 +217,20 @@ namespace KarachiTycoon.Game
             heroRow.With(boy, girl);
             right.Add(heroRow);
             right.Add(Div("grow"));
-            right.Add(Btn("Start on Burns Road", () => gc.StartGame(false, nameChoice, hero), "btn-primary", "btn-big"));
+            // New players get Uncle Rasheed's guided first day; anyone who has played before may skip it.
+            bool guided = !gc.HasSave;
+            right.Add(Text("Guided first day", "label-gold"));
+            var guide = Div("seg");
+            var on = Btn("With Uncle Rasheed", null, "seg-btn"); var off = Btn("Skip", null, "seg-btn");
+            on.clicked += () => { guided = true; on.AddToClassList("on"); off.RemoveFromClassList("on"); };
+            off.clicked += () => { guided = false; off.AddToClassList("on"); on.RemoveFromClassList("on"); };
+            (guided ? on : off).AddToClassList("on");
+            right.Add(guide.With(on, off));
+            right.Add(Btn("Start on Burns Road", () =>
+            {
+                if (guided) OpenColdOpen(() => gc.StartGame(false, nameChoice, hero, true));
+                else gc.StartGame(false, nameChoice, hero, false);
+            }, "btn-primary", "btn-big"));
             if (gc.HasSave) right.Add(Btn("Continue", () => gc.StartGame(true), "btn-big"));
 
             void Refresh()
@@ -248,6 +267,7 @@ namespace KarachiTycoon.Game
 
             // Galla (cash box).
             var galla = Div("stat", "galla");
+            galla.name = "galla";
             var cash = Text("", "money");
             var coins = Text("", "coins-label");
             galla.With(Text("GALLA", "stat-label"), cash, Div("row", "coins").With(new Icon("coin").Cls("coin-icon"), coins));
@@ -303,6 +323,7 @@ namespace KarachiTycoon.Game
                 // Two buttons on phones: play/pause, and one that steps 1x → 2x → 4x.
                 var pp = IconBtn("pause", null, gc.TogglePause, "speed-btn");
                 var step = Btn("1x", () => gc.SetSpeed(gc.Speed >= 4 ? 1 : gc.Speed >= 2 ? 4 : gc.Speed > 0 ? 2 : 1), "speed-btn", "speed-step");
+                step.name = "speed-fast";
                 speed.With(pp, step);
                 hudBind.Do(() => pp.Q<Icon>().Set(gc.Paused ? "play" : "pause"));
                 hudBind.Class(pp, "on", () => gc.Paused);
@@ -313,6 +334,7 @@ namespace KarachiTycoon.Game
                 foreach (var (v, icon, hint) in new[] { (0f, "pause", "Space"), (1f, "play", "1"), (2f, "fast", "2"), (4f, "fastest", "3") })
                 {
                     var btn = IconBtn(icon, null, () => gc.SetSpeed(v), "speed-btn");
+                    if (v == 2) btn.name = "speed-fast";
                     btn.tooltip = hint;
                     hudBind.Class(btn, "on", () => gc.Speed == v);
                     speed.Add(btn);
@@ -321,6 +343,8 @@ namespace KarachiTycoon.Game
             if (phone)
             {
                 var store = IconBtn("store", null, () => ToggleSheet("Store"), "gear-btn");
+                store.name = "top-Store";
+                hudBind.Visible(store, () => TabUnlocked("Store"));
                 hudBind.Class(store, "on", () => sheetOpen == "Store");
                 row1.With(Div("grow"), store, IconBtn("settings", null, OpenSettings, "gear-btn"));
             }
@@ -341,6 +365,8 @@ namespace KarachiTycoon.Game
                 var id = t.id;
                 if (phone && id == "Store") continue; // the coin button in the top bar opens it
                 var btn = IconBtn(t.icon, t.label, () => ToggleSheet(id), "dock-btn");
+                btn.name = "dock-" + id;
+                if (phone) hudBind.Present(btn, () => TabUnlocked(id)); else hudBind.Visible(btn, () => TabUnlocked(id));
                 if (!phone && t.key != Key.None) btn.Add(Text(t.key.ToString(), "key-hint"));
                 var badge = Div("badge");
                 btn.Add(badge);
@@ -350,6 +376,7 @@ namespace KarachiTycoon.Game
             }
 
             var aao = Btn("", () => sim.Shout(), "aao");
+            aao.name = "aao";
             var ring = new Ring();
             var aaoLabel = Text("", "aao-label");
             aao.With(ring, new Icon("shout").Cls("aao-icon"), aaoLabel);
@@ -396,7 +423,10 @@ namespace KarachiTycoon.Game
         // ---------- toasts ----------
         readonly List<(VisualElement el, float until)> toasts = new List<(VisualElement, float)>();
 
-        void Toast(string text, string kind)
+        void Toast(string text, string kind) => Toast(text, kind, null);
+
+        // panel: optional shortcut button ("Open Supplies") on the toast.
+        void Toast(string text, string kind, string panel)
         {
             if (!gc.Playing) return;
             var t = Div("toast", "toast-" + (string.IsNullOrEmpty(kind) ? "info" : kind));
@@ -408,8 +438,13 @@ namespace KarachiTycoon.Game
             }
             else t.Add(Text(text, "toast-text"));
             t.Ghost(true);
+            if (panel != null)
+            {
+                var go = Btn("Open " + panel, () => OpenSheet(panel), "btn-sm", "toast-action");
+                t.Add(go); // added after Ghost, so this one button still takes taps
+            }
             toastLayer.Insert(0, t);
-            toasts.Insert(0, (t, Time.realtimeSinceStartup + (kind == "uncle" ? 8 : 6)));
+            toasts.Insert(0, (t, Time.realtimeSinceStartup + (panel != null ? 11 : kind == "uncle" ? 8 : 6)));
             t.schedule.Execute(() => t.AddToClassList("in")).StartingIn(16);
             int max = phone ? 2 : 4;
             while (toasts.Count > max) { Remove(toasts[toasts.Count - 1].el); toasts.RemoveAt(toasts.Count - 1); }

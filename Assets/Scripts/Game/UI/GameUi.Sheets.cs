@@ -88,8 +88,9 @@ namespace KarachiTycoon.Game
 
                 var price = Text("", "price");
                 var selling = Btn("", () => sim.ToggleDish(id), "toggle");
+                selling.name = "toggle-" + id;
                 card.Add(Div("row", "controls").With(
-                    Btn("−", () => sim.SetPrice(id, s.Menu[id].Price - 10), "btn-sm"), price,
+                    Btn("−", () => sim.SetPrice(id, s.Menu[id].Price - 10), "btn-sm").Named("price-down-" + id), price,
                     Btn("+", () => sim.SetPrice(id, s.Menu[id].Price + 10), "btn-sm"),
                     Div("grow"), selling));
                 var info = Text("", "muted", "small");
@@ -114,6 +115,7 @@ namespace KarachiTycoon.Game
                 });
             }
 
+            if (!TabUnlocked("fat")) return; // ghee or oil opens with the dhaba
             var fat = Div("card");
             Add(fat);
             fat.Add(Text("Cooking fat", "h2"));
@@ -134,6 +136,7 @@ namespace KarachiTycoon.Game
             {
                 foreach (var i in sim.NeededIngredients()) { int want = s.AutoBuy[i] - s.Stock[i]; if (want > 0) sim.Buy(i, want); }
             }, "btn-primary", "wide");
+            topUp.name = "topup-all";
             Add(topUp);
             int TopUpCost() => sim.NeededIngredients().Sum(i => Mathf.Max(0, s.AutoBuy[i] - s.Stock[i]) * sim.Ing[i].Cost);
             sheetBind.Text(topUp, () => { int c = TopUpCost(); return c > 0 ? $"Top up everything now · {Rs(c)}" : "Everything is topped up"; });
@@ -161,7 +164,7 @@ namespace KarachiTycoon.Game
                     Btn("+10", () => sim.Buy(id, 10), "btn-sm"), Btn("+50", () => sim.Buy(id, 50), "btn-sm"),
                     Div("grow"), Text("Top up to", "muted", "small"),
                     Btn("−", () => sim.SetAutoBuy(id, s.AutoBuy[id] - 10), "btn-sm"), auto,
-                    Btn("+", () => sim.SetAutoBuy(id, s.AutoBuy[id] + 10), "btn-sm")));
+                    Btn("+", () => sim.SetAutoBuy(id, s.AutoBuy[id] + 10), "btn-sm").Named("auto-up-" + id)));
                 sheetBind.Text(auto, () => s.AutoBuy[id].ToString());
             }
         }
