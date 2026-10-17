@@ -82,6 +82,16 @@ The test build plays the whole tutorial by itself: add `-kt-scenario tutorial` t
 - **Readable crowds:** only the customer at the front calls out an order, one order bubble at a time, and complaints sit at staggered heights.
 - **Analytics:** `goal_done`, `goal_swap`, `upgrade_buy`.
 
+## Story and collections (M4)
+
+Content lives in `Resources/Data/story.json`; the rules are in the Sim (plain C#).
+
+- **Named regulars (8):** Bilal the rickshaw driver, Pappu the newspaper boy, Saima Baji, Hamza from NED, Akhtar Sahab from the bank, the Yusuf family, Rehana Khala and Constable Ghafoor. Each comes on set weekdays in a set time slot, orders their usual, and says a line (a toast and a name bubble). Served quickly at a fair price, they gain friendship (levels at 3, 6 and 10 visits, each with coins and a line). At level 2 they share a page of Dada's book. They remember prices: overcharge them and they say so.
+- **Dada ki Kitaab collection (12 recipe pages):** each page is a small permanent bonus (better taste for a dish, more patience, more people stopping, bigger tips, less spoilage). Found through Uncle's requests, regulars and choice cards; a sepia postcard shows each one. The Kitaab (pause menu) is now a hub: the pages album with empty slots and hints, the regulars' register with friendship hearts, and every tip.
+- **Choice cards (8):** at most one a day from day 2, at a random moment, with no repeats until the deck is used. Each has two or three answers with a short preview of what they cost or give. Examples: the beat constable wants free chai, a food blogger, flood relief, a wedding order, the kiryana's bulk offer, a student Rs 50 short, the broast man's truce, a TV crew at the dhaba.
+- **Uncle Rasheed's quest line (4 requests):** "Dada's elaichi chai" (serve 60 chai), "The shami secret" (120 bun kababs), "Nihari, 1975" (40 nihari at the dhaba) and "Burns Road knows your name" (two stars). Each opens and closes with Uncle's card, and the current one sits at the top of the goals card.
+- **Analytics:** `friend_level`, `page_found`, `card_shown`, `card_choice`, `quest_start`, `quest_done`.
+
 ## Ads and purchases
 
 Ads live in `Assets/Scripts/Game/Ads` (design doc §22):
@@ -115,7 +125,7 @@ Analytics events (`session_start`, `game_start`, `panel_open`, `day_end`, `act_d
 
 ## Next steps
 
-See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, portrait phone and landscape desktop layouts, touch camera, audio, analytics hooks), the ads refactor, M2 (the guided first day) and M3 (daily goals, thela upgrades, Rush streaks, feedback). Balance with the sensible-player run: Act 1 on day 3, Act 2 late on day 7 (goal rewards and streak tips bring it about 20 game-hours earlier than before).
+See `design/upgrade-plan.md`. Done: M1 (UI Toolkit, portrait phone and landscape desktop layouts, touch camera, audio, analytics hooks), the ads refactor, M2 (the guided first day), M3 (daily goals, thela upgrades, Rush streaks, feedback) and M4 (regulars, recipe pages, choice cards, Uncle's quests). Balance with the sensible-player run: Act 1 on day 3, Act 2 late on day 7 (goal rewards and streak tips bring it about 20 game-hours earlier than before).
 
 - Set up URP with bloom for the tube lights and sodium lamps.
 - Swap the primitive people and buildings for low-poly models (art style guide in the design doc).

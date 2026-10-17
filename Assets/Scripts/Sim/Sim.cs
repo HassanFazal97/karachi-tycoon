@@ -16,6 +16,7 @@ namespace KarachiTycoon.Sim
         public string Arch, State = "walk", Dest = "pass", Rival;
         public float X, Z, Tx, Tz, Waited, Work, WorkTotal, Timer, Sat;
         public bool Near, Uncle, Taken, Started, Gone;
+        public string Regular;   // a named regular's id
         public List<OrderItem> Order;
         public float OrderWeight;
         public int[] Seats;
@@ -70,6 +71,10 @@ namespace KarachiTycoon.Sim
         public event Action<DailyGoal> GoalDone;
         public event Action<int> StreakChanged;
         public event Action<string> UpgradeBought;
+        public event Action<PageDef> PageFound;
+        public event Action<string, int> FriendLevelUp;    // regular id, new level (1-3)
+        public event Action<CardDef> CardDrawn;
+        public event Action<QuestDef> QuestStarted, QuestDone;
 
         public Sim(GameData data, Func<double> random = null)
         {
@@ -106,6 +111,176 @@ namespace KarachiTycoon.Sim
                 S.AutoBuy["milk_patti"] = 30;
             }
             StartDay();
+        }
+
+        // ---------- story: regulars, recipe pages, choice cards, Uncle's quests ----------
+        public static readonly int[] FriendThresholds = { 3, 6, 10 };
+        List<(RegularDef def, float at)> regularsToday = new();
+        float cardAt = -1;
+        bool rivalsOff;
+        public CardDef PendingCard { get; private set; }
+
+        public PageDef Page(string id) => D.Story.Pages.Find(p => p.Id == id);
+        public bool HasPage(string id) => S.Pages.Contains(id);
+        public int Friendship(string id) => S.Friends.TryGetValue(id, out var n) ? n : 0;
+        public int FriendLevel(string id) => FriendThresholds.Count(t => Friendship(id) >= t);
+        public QuestDef ActiveQuest => S.QuestActive == null ? null : D.Story.Quests.Find(q => q.Id == S.QuestActive);
+
+        float PageMult(string key)
+        {
+            float m = 1;
+            foreach (var id in S.Pages) { var p = Page(id); if (p != null && p.Bonus == key) m *= p.Value; }
+            return m;
+        }
+
+        float PageAdd(string key)
+        {
+            float a = 0;
+            foreach (var id in S.Pages) { var p = Page(id); if (p != null && p.Bonus == key) a += p.Value; }
+            return a;
+        }
+
+        public void FindPage(string id)
+        {
+            var p = Page(id);
+            if (p == null || HasPage(id)) return;
+            S.Pages.Add(id);
+            PageFound?.Invoke(p);
+        }
+
+        static readonly Dictionary<string, (float from, float to)> SlotTimes = new()
+        {
+            ["breakfast"] = (380, 590), ["day"] = (620, 940), ["evening"] = (970, 1100), ["night"] = (1120, 1380),
+        };
+
+        void PlanStory()
+        {
+            regularsToday.Clear(); rivalsOff = false; PendingCard = null; cardAt = -1;
+            if (TutorialDay || S.Tutorial == "day1") return;
+            foreach (var r in D.Story.Regulars)
+                if (r.Days.Contains(Weekday) && SlotTimes.TryGetValue(r.Slot, out var w))
+                    regularsToday.Add((r, w.from + R() * (w.to - w.from)));
+            // At most one choice card a day, at a random moment.
+            if (S.Day >= 2 && R() < 0.7f) cardAt = 480 + R() * 760;
+            // Uncle's next request, once its day and stage have come.
+            if (S.QuestActive == null && S.QuestIndex < D.Story.Quests.Count)
+            {
+                var q = D.Story.Quests[S.QuestIndex];
+                if (S.Day >= q.MinDay && (q.Stage == null || S.Stage == q.Stage))
+                {
+                    S.QuestActive = q.Id; S.QuestProgress = 0;
+                    QuestStarted?.Invoke(q);
+                }
+            }
+        }
+
+        void StoryTick()
+        {
+            for (int i = regularsToday.Count - 1; i >= 0; i--)
+                if (S.Minute >= regularsToday[i].at) { var r = regularsToday[i].def; regularsToday.RemoveAt(i); SpawnRegular(r); }
+            if (cardAt > 0 && S.Minute >= cardAt && PendingCard == null)
+            {
+                cardAt = -1;
+                DrawCard();
+            }
+            var q = ActiveQuest;
+            if (q != null && q.Type == "fame") { S.QuestProgress = Math.Max(S.QuestProgress, (int)(S.Fame * 10)); CheckQuest(); }
+        }
+
+        void SpawnRegular(RegularDef r)
+        {
+            var order = r.Order.Where(kv => IsAvailable(kv.Key)).Select(kv => new OrderItem { Dish = kv.Key, Qty = kv.Value }).ToList();
+            if (order.Count == 0 || !Arch.ContainsKey(r.Arch)) return;
+            var c = MakeCustomer(Arch[r.Arch], false);
+            c.Near = true; c.Z = -1.5f; c.Dest = "player"; c.Regular = r.Id;
+            c.Order = order;
+            TargetQueueEntry(c);
+            Customers.Add(c);
+            Spawned?.Invoke(c);
+            Bubble?.Invoke(new BubbleEvent { C = c, Text = r.Name, Mood = 1, Key = "regular" });
+            Noticed?.Invoke(new Notice { Kind = "regular", Key = "regular", Who = r.Id, Text = r.Line });
+        }
+
+        // Regulars remember: served quickly at a fair price, they come back friendlier.
+        void RegularServed(Customer c)
+        {
+            bool quick = c.Waited <= PatienceOf(c) * 0.7f;
+            bool fair = c.Order.All(it => PriceRatio(it.Dish) <= 1.1f);
+            if (quick && fair) AddFriend(c.Regular, 1);
+            else if (!fair) Noticed?.Invoke(new Notice { Kind = "warn", Key = "regularPrice", Who = c.Regular });
+        }
+
+        public void AddFriend(string id, int n)
+        {
+            int before = FriendLevel(id);
+            S.Friends[id] = Math.Max(0, Friendship(id) + n);
+            int after = FriendLevel(id);
+            if (after <= before) return;
+            FriendLevelUp?.Invoke(id, after);
+            var r = D.Story.Regulars.Find(x => x.Id == id);
+            if (after >= 2 && r?.Page != null) FindPage(r.Page);
+        }
+
+        void DrawCard()
+        {
+            var ok = D.Story.Cards.Where(CardFits).ToList();
+            if (ok.Count == 0 && S.CardsSeen.Count > 0)
+            {
+                S.CardsSeen.Clear(); // all used: start the deck again
+                ok = D.Story.Cards.Where(CardFits).ToList();
+            }
+            if (ok.Count == 0) return;
+            PendingCard = Pick(ok);
+            S.CardsSeen.Add(PendingCard.Id);
+            CardDrawn?.Invoke(PendingCard);
+        }
+
+        // For tests and tools: draw a card now if one fits.
+        public void DrawCardNow(string id = null)
+        {
+            if (PendingCard != null) return;
+            var c = id == null ? null : D.Story.Cards.Find(x => x.Id == id);
+            if (c == null) { DrawCard(); return; }
+            PendingCard = c; CardDrawn?.Invoke(c);
+        }
+
+        bool CardFits(CardDef c) =>
+            !S.CardsSeen.Contains(c.Id) && S.Day >= c.MinDay && (c.Stage == null || S.Stage == c.Stage)
+            && (c.Slots.Count == 0 || c.Slots.Contains(Slot));
+
+        // The player's answer to the card on screen. Returns what happened.
+        public string ResolveCard(int option)
+        {
+            var card = PendingCard;
+            if (card == null || option < 0 || option >= card.Options.Count) return null;
+            PendingCard = null;
+            var o = card.Options[option]; var e = o.Effects;
+            if (e.Cash != 0) { S.Cash = Math.Max(0, S.Cash + e.Cash); if (e.Cash > 0) Today.GoalRewards += e.Cash; else Today.Setup -= e.Cash; }
+            S.Fame = Clamp(S.Fame + e.Fame, 0, 5);
+            S.Auth = Clamp(S.Auth + e.Auth, 0, 5);
+            foreach (var kv in e.Friend) AddFriend(kv.Key, kv.Value);
+            foreach (var kv in e.Stock) if (S.Stock.ContainsKey(kv.Key)) S.Stock[kv.Key] = Math.Max(0, S.Stock[kv.Key] + kv.Value);
+            if (e.RivalsOff) rivalsOff = true;
+            if (e.Page != null) FindPage(e.Page);
+            CashChanged?.Invoke();
+            return o.Result;
+        }
+
+        void QuestServe(string dish, int qty)
+        {
+            var q = ActiveQuest;
+            if (q == null || q.Type != "dish" || q.Dish != dish) return;
+            S.QuestProgress += qty;
+            CheckQuest();
+        }
+
+        void CheckQuest()
+        {
+            var q = ActiveQuest;
+            if (q == null || S.QuestProgress < q.Target) return;
+            S.QuestActive = null; S.QuestIndex++;
+            if (q.Page != null) FindPage(q.Page);
+            QuestDone?.Invoke(q);
         }
 
         // ---------- thela upgrades ----------
@@ -247,7 +422,7 @@ namespace KarachiTycoon.Sim
         public float DishQuality(string id)
         {
             var d = Dish[id]; var f = D.Balance.Fat[S.Fat];
-            float q = d.Quality + MasteryLevel(id) * 3;
+            float q = d.Quality + MasteryLevel(id) * 3 + PageAdd("quality_" + id);
             if (d.Fat > 0) q += f.Quality;
             if (S.Staff["karigar"]) q += StaffDefs["karigar"].Quality;
             return q;
@@ -274,7 +449,7 @@ namespace KarachiTycoon.Sim
         }
 
         public float PatienceOf(Customer c) =>
-            Arch[c.Arch].Patience * Stage.Patience * (S.Staff["chhotu"] ? StaffDefs["chhotu"].Patience : 1) * (Easy ? 2f : 1) * UpgradeMult("patience");
+            Arch[c.Arch].Patience * Stage.Patience * (S.Staff["chhotu"] ? StaffDefs["chhotu"].Patience : 1) * (Easy ? 2f : 1) * UpgradeMult("patience") * PageMult("patience");
 
         public List<Customer> Queue() => Customers.Where(c => c.State == "queue").ToList();
 
@@ -297,6 +472,7 @@ namespace KarachiTycoon.Sim
             seatTaken = new int[D.District.Seats.Length];
             warned.Clear();
             if (!resumed) NewGoals();
+            PlanStory();
             Today = new Ledger { Day = S.Day, Weekday = Weekday, FameStart = S.Fame, AuthStart = S.Auth };
             if (!resumed) AutoRestock();
             Snapshot = JsonConvert.SerializeObject(S);
@@ -338,7 +514,7 @@ namespace KarachiTycoon.Sim
             t.Wages = S.Staff.Where(kv => kv.Value).Sum(kv => StaffDefs[kv.Key].Wage);
             foreach (var ing in D.Ingredients)
             {
-                int lost = (int)Math.Round(S.Stock[ing.Id] * ing.Spoil);
+                int lost = (int)Math.Round(S.Stock[ing.Id] * ing.Spoil * PageMult("spoil"));
                 if (lost > 0) { t.Wastage[ing.Id] = lost; t.WastageRs += lost * ing.Cost; S.Stock[ing.Id] -= lost; }
             }
             S.Cash -= t.Rent + t.Wages + (int)Math.Round(t.Fuel);
@@ -468,6 +644,7 @@ namespace KarachiTycoon.Sim
             if (outNow && S.Generator) Today.Fuel += D.Balance.Generator.FuelPerHour * dt / 60f;
             Spawn(dt);
             TimeGoals();
+            StoryTick();
             for (int i = 0; i < uncleTimes.Count; i++)
                 if (uncleTimes[i] > 0 && S.Minute >= uncleTimes[i]) { uncleTimes[i] = -1; SpawnUncle(); }
             UpdateCustomers(dt);
@@ -546,7 +723,7 @@ namespace KarachiTycoon.Sim
             var order = ChooseOrder(a, null, out float weight);
             if (order != null)
             {
-                float p = b.VisitBase * (0.55f + 0.3f * S.Fame) * Clamp(weight / 1.2f, 0.5f, 1.5f) * st.Visit * UpgradeMult("visit");
+                float p = b.VisitBase * (0.55f + 0.3f * S.Fame) * Clamp(weight / 1.2f, 0.5f, 1.5f) * st.Visit * UpgradeMult("visit") * PageMult("visit");
                 if (a.Id == "family") p *= st.FamilyVisit;
                 if (S.Minute < S.AaoUntil) p *= b.Aao.Mult;
                 if (PowerOut && !S.Generator) p *= 0.8f;
@@ -559,7 +736,7 @@ namespace KarachiTycoon.Sim
             if (c.Dest == "pass" && c.Near)
             {
                 var rivals = D.District.Rivals.Where(r => r.Slots.Contains(Slot)).ToList();
-                if (rivals.Count > 0 && !TutorialDay && R() < b.RivalShare)
+                if (rivals.Count > 0 && !TutorialDay && !rivalsOff && R() < b.RivalShare)
                 {
                     var r = Pick(rivals);
                     c.Dest = "rival"; c.Rival = r.Id;
@@ -689,7 +866,8 @@ namespace KarachiTycoon.Sim
             S.TotalServed += c.Party; t.Served += c.Party;
             t.Streak++; if (t.Streak > t.BestStreak) t.BestStreak = t.Streak;
             StreakChanged?.Invoke(t.Streak);
-            foreach (var it in c.Order) Progress("dish", it.Qty, it.Dish);
+            foreach (var it in c.Order) { Progress("dish", it.Qty, it.Dish); QuestServe(it.Dish, it.Qty); }
+            if (c.Regular != null) RegularServed(c);
             Progress("served", c.Party);
             if (S.Minute < 780) Progress("served_before", c.Party);
             Progress("revenue", bill);
@@ -704,7 +882,7 @@ namespace KarachiTycoon.Sim
             // A Rush streak (served in a row, nobody walking off) adds up to half again on the tip.
             if (sat > 0.5f)
             {
-                int tip = (int)Math.Round(bill * 0.08f * (1 + 0.02f * Math.Min(t.Streak, 25)) / 10f) * 10;
+                int tip = (int)Math.Round(bill * 0.08f * (1 + 0.02f * Math.Min(t.Streak, 25)) * PageMult("tips") / 10f) * 10;
                 t.Tips += tip; S.Cash += tip;
                 Progress("tips", tip);
             }

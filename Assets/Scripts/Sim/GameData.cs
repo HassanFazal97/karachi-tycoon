@@ -125,6 +125,57 @@ namespace KarachiTycoon.Sim
         public int Min, Max, Reward, Coins;
     }
 
+    // Story content (Resources/Data/story.json): named regulars, Dada's recipe pages, choice cards, Uncle's quests.
+    public class RegularDef
+    {
+        public string Id, Name, Role, Arch, Slot, Line, Page;
+        public List<string> Days = new();
+        public Dictionary<string, int> Order = new();
+        public List<string> Levels = new();
+    }
+
+    public class PageDef
+    {
+        public string Id, Title, Text, Hint;
+        // "quality_<dish>" (added), or "patience" / "visit" / "tips" / "spoil" (multipliers).
+        public string Bonus;
+        public float Value;
+    }
+
+    public class CardEffects
+    {
+        public int Cash;
+        public float Fame, Auth;
+        public Dictionary<string, int> Friend = new();
+        public Dictionary<string, int> Stock = new();
+        public string Page;
+        public bool RivalsOff;
+    }
+
+    public class CardOption { public string Label, Result; public CardEffects Effects = new(); }
+
+    public class CardDef
+    {
+        public string Id, Title, Text, Stage;
+        public int MinDay;
+        public List<string> Slots = new();
+        public List<CardOption> Options = new();
+    }
+
+    public class QuestDef
+    {
+        public string Id, Title, Type, Dish, Stage, Page, Intro, Outro;
+        public int MinDay, Target, Coins;
+    }
+
+    public class StoryDef
+    {
+        public List<RegularDef> Regulars = new();
+        public List<PageDef> Pages = new();
+        public List<CardDef> Cards = new();
+        public List<QuestDef> Quests = new();
+    }
+
     public class GameData
     {
         public List<DishDef> Dishes;
@@ -135,6 +186,7 @@ namespace KarachiTycoon.Sim
         public DistrictDef District;
         public List<UpgradeDef> Upgrades = new();
         public List<GoalDef> Goals = new();
+        public StoryDef Story = new();
 
         // Reads the data files through a loader (Resources in Unity, the file system in tools).
         public static GameData Load(System.Func<string, string> readText)
@@ -150,6 +202,7 @@ namespace KarachiTycoon.Sim
                 District = Read<DistrictDef>("burns_road"),
                 Upgrades = Read<List<UpgradeDef>>("upgrades"),
                 Goals = Read<List<GoalDef>>("goals"),
+                Story = Read<StoryDef>("story"),
             };
         }
     }

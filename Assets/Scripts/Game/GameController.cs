@@ -89,6 +89,22 @@ namespace KarachiTycoon.Game
             Sim.StageChanged += () => Street.RefreshStage(Sim);
             Sim.Shouted += () => Toast("\"Aao bhai, garma garam!\" People nearby turn to look.", "good");
             Sim.UpgradeBought += id => { Street.RefreshStage(Sim); Analytics.Event("upgrade_buy", ("upgrade", id), ("day", Sim.S.Day)); };
+            Sim.FriendLevelUp += (id, level) =>
+            {
+                var r = Data.Story.Regulars.Find(x => x.Id == id);
+                int coins = 10 * level;
+                Wallet.Coins += coins; ApplyWallet(); SaveWallet();
+                Toast($"{r.Name}: friendship level {level}. {r.Levels[Mathf.Clamp(level - 1, 0, r.Levels.Count - 1)]} +{coins} silver coins.", "good");
+                Analytics.Event("friend_level", ("regular", id), ("level", level), ("day", Sim.S.Day));
+            };
+            Sim.PageFound += p => Analytics.Event("page_found", ("page", p.Id), ("day", Sim.S.Day), ("pages", Sim.S.Pages.Count));
+            Sim.CardDrawn += c => Analytics.Event("card_shown", ("card", c.Id), ("day", Sim.S.Day));
+            Sim.QuestStarted += q => Analytics.Event("quest_start", ("quest", q.Id), ("day", Sim.S.Day));
+            Sim.QuestDone += q =>
+            {
+                if (q.Coins > 0) { Wallet.Coins += q.Coins; ApplyWallet(); SaveWallet(); }
+                Analytics.Event("quest_done", ("quest", q.Id), ("day", Sim.S.Day));
+            };
             Sim.GoalDone += g =>
             {
                 // Goal coins are silver coins: they live in the wallet with the bought ones.
@@ -114,12 +130,15 @@ namespace KarachiTycoon.Game
                 "outageGen" => "Load shedding. Your generator kicks in.",
                 "lowStock" => $"Almost out of {Sim.Ing[n.Ing].En}. Buy more in Supplies.",
                 "mastery" => $"Your {Sim.Dish[n.Dish].En} is getting better. Mastery {n.Level} of 5.",
+                "regular" => $"{RegularName(n.Who)}: \"{n.Text}\"",
+                "regularPrice" => $"{RegularName(n.Who)}: \"Prices have gone up, beta? I will remember that.\"",
                 _ => n.Who == "uncle" ? $"Uncle Rasheed: \"{n.Text}\"" : n.Text,
             };
             Toast(text, n.Who == "uncle" ? "uncle" : n.Kind);
         }
 
         public void Toast(string text, string kind = "") => Toasted?.Invoke(text, kind);
+        string RegularName(string id) => Data.Story.Regulars.Find(r => r.Id == id)?.Name ?? id;
 
         // ---------- save ----------
         public void Save()

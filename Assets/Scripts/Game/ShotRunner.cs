@@ -63,6 +63,19 @@ namespace KarachiTycoon.Game
             yield return Shot("06_thela");
             gc.Rig.ViewX = vx; gc.Rig.ViewWidth = vw;
             yield return InputTest(gc, ui);
+            // Story: a choice card, a recipe page, and the Kitaab album.
+            gc.Sim.DrawCardNow("constable");
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("07_choice");
+            if (uiRoot.Q("choice-0") != null) { yield return Click(uiRoot, uiRoot.Q("choice-0")); yield return new WaitForSecondsRealtime(0.5f); yield return Shot("07b_choice_result"); }
+            ui.DebugShow("none");
+            gc.Sim.FindPage("elaichi_chai");
+            yield return new WaitForSecondsRealtime(0.8f);
+            yield return Shot("08_page");
+            ui.DebugShow("none");
+            ui.DebugShow("kitaab");
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return Shot("09_kitaab");
             foreach (var tab in new[] { "Menu", "Supplies", "Staff", "Shop", "Store", "settings", "act1" })
             {
                 ui.DebugShow(tab);
@@ -119,9 +132,14 @@ namespace KarachiTycoon.Game
             yield return new WaitForSecondsRealtime(0.6f);
             yield return Shot("t100_day2_unlock");
             if (ui.CoachVisible) yield return Click(root, root.Q(className: "coach-card").Q<Button>(className: "btn-primary"));
+            // Day 2 also brings Uncle's first request.
+            for (int i = 0; i < 30 && !ui.CoachVisible; i++) yield return new WaitForSecondsRealtime(0.1f);
+            yield return new WaitForSecondsRealtime(0.5f);
+            yield return Shot("t101_quest");
+            if (ui.CoachVisible) yield return Click(root, root.Q(className: "coach-card").Q<Button>(className: "btn-primary"));
             ui.DebugShow("kitaab");
             yield return new WaitForSecondsRealtime(0.6f);
-            yield return Shot("t101_kitaab");
+            yield return Shot("t102_kitaab");
             Debug.Log($"[ShotRunner] tutorial: finished={!tutor.Active} steps={n} real seconds={Time.realtimeSinceStartup - start:F0} day={gc.Sim.S.Day} served={gc.Sim.S.TotalServed} cash={gc.Sim.S.Cash}");
         }
 

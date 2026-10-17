@@ -25,7 +25,7 @@ namespace KarachiTycoon.Game
 
         // What is open. Only one modal at a time; the sheet can sit under a modal.
         string modal;
-        public bool Blocking => modal == "settings" || modal == "act1" || modal == "act2" || modal == "kitaab" || (tutor != null && tutor.Pausing);
+        public bool Blocking => modal == "settings" || modal == "act1" || modal == "act2" || modal == "kitaab" || modal == "choice" || modal == "page" || (tutor != null && tutor.Pausing);
 
         public void Init(GameController g)
         {
@@ -100,6 +100,7 @@ namespace KarachiTycoon.Game
             sim.StageChanged += RefreshSheet;
             sim.UpgradeBought += _ => RefreshSheet();
             sim.GoalDone += OnGoalDone;
+            HookStory();
             sim.Bubble += OnServeBubble;
             Rebuild();
         }
@@ -130,6 +131,7 @@ namespace KarachiTycoon.Game
             UpdateToasts();
             UpdateAdOverlay();
             UpdateCoach();
+            UpdateStory();
             Keyboard();
         }
 

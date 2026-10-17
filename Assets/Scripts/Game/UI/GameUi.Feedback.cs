@@ -35,6 +35,16 @@ namespace KarachiTycoon.Game
             goalsCard = Div("goals-card");
             var count = Text("", "goals-count");
             goalsCard.Add(Div("row", "goals-head").With(new Icon("target").Cls("goals-icon"), Text("AAJ KA KAAM", "stat-label", "grow"), count));
+            // Uncle's current request sits above the day's goals.
+            var quest = Div("goal-row", "quest-row");
+            var qName = Text("", "goal-name"); var qProg = Text("", "goal-prog");
+            var (qBar, qFill) = Bar("goal-mini");
+            quest.With(Div("portrait", "quest-portrait").With(new Icon("staff")), Div("col", "grow").With(qName, qBar), qProg);
+            goalsCard.Add(quest);
+            hudBind.Visible(quest, () => sim.ActiveQuest != null);
+            hudBind.Text(qName, () => sim.ActiveQuest is var q && q != null ? "Uncle: " + q.Title : "");
+            hudBind.Fill(qFill, () => sim.ActiveQuest is var q && q != null ? sim.S.QuestProgress / (float)q.Target : 0);
+            hudBind.Text(qProg, () => sim.ActiveQuest is var q && q != null ? (q.Type == "fame" ? $"{sim.S.Fame:F1}/{q.Target / 10f:F0}★" : $"{sim.S.QuestProgress}/{q.Target}") : "");
             goalsRows = Div("col");
             goalsCard.Add(goalsRows);
             hud.Add(goalsCard);
@@ -54,14 +64,14 @@ namespace KarachiTycoon.Game
                 var n = Text("", "goals-btn-count");
                 btn.Add(n);
                 hudBind.Text(n, () => $"{sim.S.Goals.Count(g => g.Done)}/{sim.S.Goals.Count}");
-                hudBind.Visible(btn, () => sim.S.Goals.Count > 0);
+                hudBind.Visible(btn, () => sim.S.Goals.Count > 0 || sim.ActiveQuest != null);
                 phoneRow.Insert(phoneRow.IndexOf(phoneRow.Q(className: "grow")) + 1, btn);
-                hudBind.Visible(goalsCard, () => goalsOpen && sim.S.Goals.Count > 0 && sheetOpen == null);
+                hudBind.Visible(goalsCard, () => goalsOpen && (sim.S.Goals.Count > 0 || sim.ActiveQuest != null) && sheetOpen == null);
                 hudBind.Class(btn, "on", () => goalsOpen);
                 // Toasts sit above the HUD; step them aside while the dropdown is open.
                 hudBind.Visible(toastLayer, () => !goalsOpen);
             }
-            else hudBind.Visible(goalsCard, () => sim.S.Goals.Count > 0 && sheetOpen == null && !sim.S.DayOver);
+            else hudBind.Visible(goalsCard, () => (sim.S.Goals.Count > 0 || sim.ActiveQuest != null) && sheetOpen == null && !sim.S.DayOver);
 
             // Galla bump when money comes in.
             cashLabel = hud.Q<Label>(className: "money");

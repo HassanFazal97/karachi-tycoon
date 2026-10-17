@@ -1,0 +1,110 @@
+{
+  "regulars": [
+    { "id": "bilal", "name": "Bilal", "role": "Rickshaw driver", "arch": "mazdoor", "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], "slot": "breakfast",
+      "order": { "chai": 2 }, "line": "Do cup, jaldi! The rickshaw is double parked.", "page": "rickshaw_hours",
+      "levels": ["Bilal waves from his rickshaw as he passes.", "Bilal tells his passengers to try your chai.", "Bilal has painted your thela's name on his rickshaw."] },
+    { "id": "pappu", "name": "Pappu", "role": "Newspaper boy", "arch": "student", "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], "slot": "breakfast",
+      "order": { "chai": 1 }, "line": "Akhbar le lo! And one chai, Bhai.", "page": "morning_paper",
+      "levels": ["Pappu leaves you a free paper.", "Pappu shouts your name with the headlines.", "Pappu says he will open a thela like yours one day."] },
+    { "id": "saima", "name": "Saima Baji", "role": "Schoolteacher", "arch": "babu", "days": ["Mon", "Wed", "Fri"], "slot": "day",
+      "order": { "chai": 1, "bun_kabab": 1 }, "line": "Forty copies to check before tomorrow. Chai, please.", "page": "teachers_tea",
+      "levels": ["Saima Baji brings her colleagues.", "Saima Baji's class wrote essays about Burns Road.", "Saima Baji calls your chai \"the best grade in Karachi\"."] },
+    { "id": "hamza", "name": "Hamza", "role": "NED student", "arch": "student", "days": ["Tue", "Thu", "Sat"], "slot": "evening",
+      "order": { "bun_kabab": 2 }, "line": "Exam tomorrow. Tonight, only bun kabab.", "page": "exam_nights",
+      "levels": ["Hamza passed his exam and gives the credit to you.", "Hamza brings his whole study group.", "Hamza made Burns Road the background of his final project."] },
+    { "id": "akhtar", "name": "Akhtar Sahab", "role": "Bank clerk", "arch": "babu", "days": ["Mon", "Tue", "Wed", "Thu", "Fri"], "slot": "evening",
+      "order": { "chai": 1, "samosa": 1 }, "line": "Same as always, beta. The bank closed late again.", "page": "clerks_clock",
+      "levels": ["Akhtar Sahab sets his watch by your kettle.", "Akhtar Sahab recommends you to every customer at his counter.", "Akhtar Sahab says your galla is better kept than his bank's."] },
+    { "id": "yusuf", "name": "The Yusuf family", "role": "Weekend regulars", "arch": "family", "days": ["Sat", "Sun"], "slot": "night",
+      "order": { "bun_kabab": 3, "chai": 2 }, "line": "Bachon ko Burns Road dikhana tha. Three bun kababs!", "page": "family_table",
+      "levels": ["The Yusuf children wave at you from the car.", "The Yusufs bring their cousins from Hyderabad.", "The Yusufs celebrated an engagement at your stall."] },
+    { "id": "rehana", "name": "Rehana Khala", "role": "Neighbourhood aunty", "arch": "family", "days": ["Fri", "Sun"], "slot": "evening",
+      "order": { "dahi_baray": 1, "samosa": 1 }, "line": "Your Dada used to save me the first dahi baray. Do you?", "page": "khala_dahi",
+      "levels": ["Rehana Khala tells everyone you are \"a good boy\" or \"a good girl\".", "Rehana Khala sends her neighbours.", "Rehana Khala brought you mithai from her daughter's wedding."] },
+    { "id": "ghafoor", "name": "Constable Ghafoor", "role": "Beat constable", "arch": "mazdoor", "days": ["Mon", "Tue", "Wed", "Thu", "Fri"], "slot": "night",
+      "order": { "chai": 1 }, "line": "Long beat tonight. Chai, kadak.", "page": "beat_and_bread",
+      "levels": ["Ghafoor keeps an eye on your thela at night.", "Ghafoor chases off the man selling fake \"Asli Burns Road\" signs.", "Ghafoor says Burns Road is quieter when your lamp is on."] }
+  ],
+
+  "pages": [
+    { "id": "elaichi_chai", "title": "Elaichi chai", "text": "Crush the elaichi, never grind it. Let it boil with the leaves, not after. Patience makes colour.", "bonus": "quality_chai", "value": 5, "hint": "Uncle Rasheed's first request" },
+    { "id": "shami_secret", "title": "The shami secret", "text": "A spoon of chana daal soaked overnight, and the onion goes in raw. The tawa should hiss, not shout.", "bonus": "quality_bun_kabab", "value": 5, "hint": "Uncle Rasheed's second request" },
+    { "id": "nihari_1975", "title": "Nihari, 1975", "text": "Start the deg at Isha. Bone marrow, nalli, and a ladle of last night's tari. Never rush the night.", "bonus": "quality_nihari", "value": 6, "hint": "Uncle Rasheed's third request" },
+    { "id": "rickshaw_hours", "title": "Rickshaw hours", "text": "The drivers have five minutes. Have the glass poured before they ask.", "bonus": "patience", "value": 1.05, "hint": "A morning regular with a rickshaw" },
+    { "id": "morning_paper", "title": "The morning paper", "text": "The boy who sells the news sells your name too. Feed him well.", "bonus": "visit", "value": 1.03, "hint": "A boy who shouts headlines" },
+    { "id": "teachers_tea", "title": "A teacher's tea", "text": "Teachers tip in kindness and in customers. Remember their names.", "bonus": "tips", "value": 1.08, "hint": "A teacher with copies to check" },
+    { "id": "exam_nights", "title": "Exam nights", "text": "Students eat when they are worried. Make the bun soft and the chutney sharp.", "bonus": "quality_bun_kabab", "value": 3, "hint": "A student before his exams" },
+    { "id": "clerks_clock", "title": "The clerk's clock", "text": "Office men come at the same minute every day. Be ready at that minute.", "bonus": "visit", "value": 1.03, "hint": "A man from the bank" },
+    { "id": "family_table", "title": "The family table", "text": "Families stay when the children are happy. Keep the chairs clean and the line short.", "bonus": "patience", "value": 1.05, "hint": "A weekend family" },
+    { "id": "khala_dahi", "title": "Khala's dahi", "text": "Soak the baray in warm water first, then the dahi. Never the other way round.", "bonus": "quality_dahi_baray", "value": 5, "hint": "An aunty who knew your Dada" },
+    { "id": "beat_and_bread", "title": "Buy what you sell", "text": "The milkman's son taught me: buy for the day you will have, not the day you hope for.", "bonus": "spoil", "value": 0.85, "hint": "The night constable" },
+    { "id": "samosa_fold", "title": "The samosa fold", "text": "Three folds, not two. Seal with flour paste and fry on a low flame until it sings.", "bonus": "quality_samosa", "value": 5, "hint": "Someone with a camera" }
+  ],
+
+  "cards": [
+    { "id": "constable", "title": "The beat constable", "minDay": 2, "slots": ["evening", "night"],
+      "text": "Constable Ghafoor leans on your thela. \"Chai to milegi na? The area is mine, after all.\"",
+      "options": [
+        { "label": "Chai on the house", "result": "He sips, nods, and moves the other hawkers along for the evening.", "effects": { "friend": { "ghafoor": 2 }, "rivalsOff": true } },
+        { "label": "Politely charge him", "result": "He pays, grumbling. An honest galla, an honest chai.", "effects": { "auth": 0.05, "friend": { "ghafoor": -1 } } }
+      ] },
+    { "id": "blogger", "title": "A food blogger", "minDay": 3, "slots": ["day", "evening"],
+      "text": "A girl with a phone on a stick: \"Can I film your thela for my 40k followers? One free plate?\"",
+      "options": [
+        { "label": "Free plate, film away", "result": "The video goes round Karachi by night. She leaves you a tip: an old samosa trick.", "effects": { "cash": -200, "fame": 0.12, "page": "samosa_fold" } },
+        { "label": "Everyone pays, beta", "result": "She pays and films anyway. A smaller video, but an honest one.", "effects": { "fame": 0.04, "auth": 0.02 } }
+      ] },
+    { "id": "flood", "title": "Flood relief", "minDay": 2, "slots": ["breakfast", "day", "evening"],
+      "text": "Students are collecting for families hit by the floods in Sindh.",
+      "options": [
+        { "label": "Give Rs 2,000", "result": "They write your thela's name on their banner. Burns Road notices.", "effects": { "cash": -2000, "fame": 0.1 } },
+        { "label": "Free chai for the volunteers", "result": "Ten cups for ten tired students. They promise to come back.", "effects": { "cash": -500, "fame": 0.05 } },
+        { "label": "Not today", "result": "They thank you anyway and move down the road.", "effects": {} }
+      ] },
+    { "id": "wedding", "title": "A wedding order", "minDay": 3, "slots": ["day", "evening"],
+      "text": "The groom's uncle from the next street: \"Sixty bun kababs for the mehndi. Half the money now, the rest on Sunday.\"",
+      "options": [
+        { "label": "Take the order", "result": "A long night on the tawa, and Rs 3,000 in the galla. The rest comes Sunday, inshallah.", "effects": { "cash": 3000, "fame": 0.04, "stock": { "bun_egg": -40 } } },
+        { "label": "Too big for my thela", "result": "He goes to Khan Broast. Maybe next time.", "effects": {} }
+      ] },
+    { "id": "kiryana", "title": "The kiryana's offer", "minDay": 2, "slots": ["breakfast", "day"],
+      "text": "The corner shop: \"Take a week of milk now, Rs 3,000, and I'll knock off ten percent.\"",
+      "options": [
+        { "label": "Stock up", "result": "Crates of milk stacked behind the thela. Mind it does not spoil.", "effects": { "cash": -3000, "stock": { "milk_patti": 120 } } },
+        { "label": "Day by day is fine", "result": "\"As you like, beta.\"", "effects": {} }
+      ] },
+    { "id": "short", "title": "Fifty rupees short", "minDay": 2, "slots": ["evening", "night"],
+      "text": "A student counts his coins twice. He is Rs 50 short for his bun kabab.",
+      "options": [
+        { "label": "Let it go", "result": "\"I'll pay you back, Bhai!\" He tells his whole hostel.", "effects": { "cash": -50, "fame": 0.02, "friend": { "hamza": 1 } } },
+        { "label": "Half a plate, then", "result": "He takes the half plate and smiles anyway.", "effects": { "auth": 0.01 } }
+      ] },
+    { "id": "rival_truce", "title": "The broast man's offer", "minDay": 4, "slots": ["day", "evening"],
+      "text": "The Khan Broast owner: \"No price war, yaar. Let's both stay out of each other's way tonight.\"",
+      "options": [
+        { "label": "Shake hands", "result": "His grill stays quiet tonight; your line grows.", "effects": { "rivalsOff": true, "auth": -0.02 } },
+        { "label": "May the best plate win", "result": "He laughs. The street loves a rivalry.", "effects": { "fame": 0.03 } }
+      ] },
+    { "id": "tv_crew", "title": "A TV crew", "minDay": 5, "stage": "dhaba", "slots": ["evening", "night"],
+      "text": "A TV crew is filming \"Karachi's food streets\". The anchor wants nihari on camera.",
+      "options": [
+        { "label": "Serve the crew", "result": "Your deg on national television. The phones won't stop.", "effects": { "cash": -800, "fame": 0.2 } },
+        { "label": "Too busy tonight", "result": "They film Khan Broast instead.", "effects": {} }
+      ] }
+  ],
+
+  "quests": [
+    { "id": "q_chai", "title": "Dada's elaichi chai", "minDay": 2, "type": "dish", "dish": "chai", "target": 60, "page": "elaichi_chai",
+      "intro": "Your Dada's chai had something mine never did. Serve 60 cups and maybe you will find his secret. He wrote everything down, you know.",
+      "outro": "There! A page fell out of the book: \"Elaichi chai\". Forty years I waited to taste that again." },
+    { "id": "q_bun", "title": "The shami secret", "minDay": 3, "type": "dish", "dish": "bun_kabab", "target": 120, "page": "shami_secret",
+      "intro": "In 1971 your Dada fed half of Burns Road on credit. His bun kabab was why they paid him back. Serve 120 and earn the next page.",
+      "outro": "Chana daal! Of course. Your Dada was laughing at all of us. Keep the page safe." },
+    { "id": "q_nihari", "title": "Nihari, 1975", "minDay": 4, "stage": "dhaba", "type": "dish", "dish": "nihari", "target": 40, "page": "nihari_1975",
+      "intro": "The deg is lit again. The year I first sat here, your Dada made nihari that people queued for at Fajr. Serve 40 plates.",
+      "outro": "The taste of 1975. You have his hands, beta. Burns Road will know your name soon." },
+    { "id": "q_name", "title": "Burns Road knows your name", "minDay": 5, "stage": "dhaba", "type": "fame", "target": 20, "coins": 50,
+      "intro": "One last thing for this old man: two stars of Shohrat. Then I will tell you what your Dada said to me the night he closed.",
+      "outro": "He said: \"Rasheed, the thela will come back. Wait for it.\" I waited, beta. It was worth it." }
+  ]
+}

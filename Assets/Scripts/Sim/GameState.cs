@@ -70,6 +70,14 @@ namespace KarachiTycoon.Sim
         public List<string> Seen = new();
         public List<DailyGoal> Goals = new();
         public List<string> Owned = new();   // thela upgrades bought
+        // Story: friendship points with each named regular, Dada's recipe pages found, choice cards
+        // already drawn (no repeats until all are used), and Uncle Rasheed's quest line.
+        public Dictionary<string, int> Friends = new();
+        public List<string> Pages = new();
+        public List<string> CardsSeen = new();
+        public int QuestIndex;
+        public string QuestActive;
+        public int QuestProgress;
         // Behaviour, for gentle reminders ("never shouted by day 3").
         public int Shouts, PriceChanges;
 

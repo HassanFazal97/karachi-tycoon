@@ -142,20 +142,5 @@ namespace KarachiTycoon.Game
             next.clicked += () => { if (i < cards.Count - 1) { i++; Show(); } else Done(false); };
             Show();
         }
-
-        // ---------- Dada ki Kitaab: every tip, any time ----------
-        void OpenKitaab()
-        {
-            var box = OpenModal("kitaab", "story", "kitaab");
-            box.Add(new TruckStrip().Cls("modal-strip"));
-            box.Add(Div("row").With(new Icon("book").Cls("kitaab-icon"), Text("Dada ki Kitaab", "story-title", "grow"), IconBtn("close", null, CloseModal, "close-btn")));
-            box.Add(Text("Everything Uncle Rasheed has taught you, in your Dada's handwriting.", "muted", "small"));
-            var scroll = new ScrollView(ScrollViewMode.Vertical).Cls("kitaab-scroll");
-            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            foreach (var tip in tutor.Data.Kitaab)
-                scroll.Add(Div("kitaab-tip").With(Text(tip.Title, "h2"), Text(tip.Text, "body")));
-            box.Add(scroll);
-            gc.Analytics.Event("kitaab_open");
-        }
     }
 }

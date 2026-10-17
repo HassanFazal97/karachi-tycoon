@@ -137,7 +137,7 @@ namespace KarachiTycoon.Game
             box.Add(Seg(new[] { ("0.85", "Small"), ("1", "Medium"), ("1.2", "Large") }, Settings.UiScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
                 v => Settings.UiScale = float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)));
 
-            if (gc.Playing) box.Add(IconBtn("book", "Dada ki Kitaab: every tip", () => { CloseModal(); OpenKitaab(); }, "wide"));
+            if (gc.Playing) box.Add(IconBtn("book", "Dada ki Kitaab: pages, regulars, tips", () => { CloseModal(); OpenKitaab(); }, "wide"));
             if (!phone) box.Add(Text("Keys: Space pause · 1 2 3 speed · A/D pan · +/- zoom · M S H B panels · Q shout · Esc close", "muted", "small", "keys"));
 
             var actions = Div("row", "modal-actions");

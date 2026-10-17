@@ -355,6 +355,40 @@
 .khata-goal .goal-mark { color: var(--ink); width: 16px; height: 16px; }
 .mini-stamp { color: var(--ink); border-width: 2px; border-color: var(--ink); border-radius: 4px; padding: 0 6px; font-size: 11px; -unity-font-style: bold; rotate: -6deg; }
 
+/* ---------- story: choices, pages, Kitaab, regulars ---------- */
+.choice-card { width: 560px; }
+.choice-options { margin-top: 12px; }
+.choice-btn { flex-direction: column; align-items: flex-start; margin-bottom: 8px; padding: 10px 14px; background-color: var(--wood); border-color: var(--gold); }
+.choice-btn:hover { background-color: var(--wood-light); }
+.choice-label { color: var(--paper); font-size: 16px; -unity-font-style: bold; }
+.choice-hint { color: var(--gold); font-size: 12px; margin-top: 2px; }
+
+.page-card { width: 460px; align-items: center; padding: 22px 26px; background-color: #D9C3A0; border-color: #8C6A44; }
+.page-icon { width: 56px; height: 56px; color: #5C4127; margin-bottom: 6px; }
+.page-kicker { color: #8E2B25; font-size: 12px; letter-spacing: 2px; -unity-font-style: bold; }
+.page-title { color: #4A3220; font-size: 26px; -unity-font-style: bold; margin: 4px 0 8px 0; }
+.page-text { color: #4A3220; font-size: 16px; -unity-font-style: italic; -unity-text-align: middle-center; }
+.page-bonus { color: #2B3F8F; font-size: 14px; -unity-font-style: bold; margin: 12px 0 4px 0; -unity-text-align: middle-center; }
+.page-count { color: #6B4E33; font-size: 12px; margin-bottom: 12px; }
+.page-card .btn-big { align-self: stretch; }
+
+.kitaab-tabs { margin-top: 8px; }
+.page-grid { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.page-cell { width: 48.5%; min-height: 110px; margin-bottom: 10px; padding: 8px 10px; border-radius: 8px; border-width: 1px; }
+.page-cell.found { background-color: #E7D6B5; border-color: #8C6A44; }
+.page-cell.missing { background-color: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.12); border-width: 1px; align-items: center; justify-content: center; }
+.page-cell-text { color: #4A3220; font-size: 12px; -unity-font-style: italic; margin-top: 4px; }
+.page-cell-bonus { color: #2B3F8F; font-size: 11px; -unity-font-style: bold; margin-top: 4px; }
+.page-missing { font-size: 30px; color: rgba(0, 0, 0, 0.25); -unity-font-style: bold; }
+.hearts { margin-left: 8px; }
+.heart { width: 12px; height: 12px; border-radius: 6px; margin-left: 3px; }
+.heart.on { background-color: var(--red); }
+.heart.off { background-color: rgba(0, 0, 0, 0.12); }
+.quest-row { border-top-width: 0; padding-top: 2px; }
+.quest-portrait { width: 22px; height: 22px; border-radius: 11px; border-width: 1px; margin-right: 8px; }
+.quest-portrait .icon { width: 13px; height: 13px; }
+.toast-regular { border-color: #9FC8E8; }
+
 /* =========================================================
    PHONE (portrait, ~390x844 points, one hand): two-row top bar, a bottom
    dock with the shout in the middle, speed in the corner, half-height
@@ -455,3 +489,9 @@
 .phone .goal-swap { width: 40px; height: 36px; }
 .phone .stamp-word { font-size: 30px; }
 .phone .banner-row { flex-direction: column; align-items: center; padding-right: 0; }
+
+.phone .choice-card { width: 94%; }
+.phone .page-card { width: 90%; padding: 18px; }
+.phone .page-title { font-size: 22px; }
+.phone .page-cell { width: 100%; min-height: 0; }
+.phone .choice-btn { padding: 12px 14px; }

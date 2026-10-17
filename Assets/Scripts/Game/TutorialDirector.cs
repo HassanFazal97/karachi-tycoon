@@ -34,7 +34,8 @@ namespace KarachiTycoon.Game
         float stepStart, tutorialStart, enteredMinute;
         bool grumbled, waiting;
         TutorialData.Card explainer;           // an unlock card on screen
-        readonly Queue<string> pendingUnlocks = new Queue<string>();
+        // Uncle's cards waiting their turn: unlock explainers ("unlock:Staff") and story moments (quests).
+        readonly Queue<(string key, TutorialData.Card card, string target)> pendingCards = new Queue<(string, TutorialData.Card, string)>();
 
         public TutorialData.Step Current => Active && index >= 0 && index < Data.Steps.Count ? Data.Steps[index] : null;
         public bool Active => sim != null && sim.S.Tutorial == "day1";
@@ -202,7 +203,7 @@ namespace KarachiTycoon.Game
                 if (Done(st.Id)) Go(index + 1);
                 return;
             }
-            if (explainer == null && pendingUnlocks.Count > 0 && ui.ModalId == null) ShowPendingUnlock();
+            if (explainer == null && pendingCards.Count > 0 && ui.ModalId == null) ShowPendingUnlock();
         }
 
         // ---------- unlock explainers ----------
@@ -212,20 +213,26 @@ namespace KarachiTycoon.Game
             if (s.Tutorial == null) return;
             // The Store gets no card: it opens only when the player taps it.
             foreach (var tab in new[] { "Staff", "Shop", "fat" })
-                if (Unlocked(tab) && !s.Seen.Contains("unlock_" + tab)) { s.Seen.Add("unlock_" + tab); pendingUnlocks.Enqueue(tab); }
+                if (Unlocked(tab) && !s.Seen.Contains("unlock_" + tab) && Data.Unlocks.TryGetValue(tab, out var card))
+                {
+                    s.Seen.Add("unlock_" + tab);
+                    pendingCards.Enqueue(("unlock:" + tab, card, tab == "fat" ? null : "dock-" + tab));
+                }
             if (s.Day >= 3 && s.Shouts == 0) Hint("noShout");
             if (s.Day >= 3 && s.PriceChanges == 0) Hint("noPrice");
         }
 
+        // A story moment from Uncle (a quest starting or done), shown when nothing else is on screen.
+        public void QueueCard(string key, string title, string text) =>
+            pendingCards.Enqueue((key, new TutorialData.Card { Title = title, Text = text }, null));
+
         void ShowPendingUnlock()
         {
-            if (Active || pendingUnlocks.Count == 0) return;
-            var tab = pendingUnlocks.Dequeue();
-            if (!Data.Unlocks.TryGetValue(tab, out var card)) return;
+            if (Active || pendingCards.Count == 0) return;
+            var (key, card, target) = pendingCards.Dequeue();
             explainer = card;
-            gc.Analytics.Event("unlock", ("panel", tab), ("day", sim.S.Day));
-            string target = tab == "fat" ? null : "dock-" + tab;
-            ui.ShowCoach(card.Title, card.Text, target, true, "Got it", Next, null);
+            if (key.StartsWith("unlock:")) gc.Analytics.Event("unlock", ("panel", key.Substring(7)), ("day", sim.S.Day));
+            ui.ShowCoach(card.Title, card.Text, target, true, key.StartsWith("unlock:") ? "Got it" : "Ji, Uncle", Next, null);
         }
 
         // ---------- one-time hints ----------
