@@ -27,6 +27,12 @@ namespace KarachiTycoon.Game
             go.AddComponent<ShotRunner>().dir = dir;
         }
 
+        // -kt-offscreen: render the camera and the UI into textures and composite them, so screenshots
+        // work in -batchmode (no window: a locked screen or a CI machine).
+        static bool Offscreen => Array.IndexOf(Environment.GetCommandLineArgs(), "-kt-offscreen") >= 0;
+        RenderTexture sceneRT, uiRT;
+        Camera cam;
+
         public static string Arg(string name)
         {
             var args = Environment.GetCommandLineArgs();
@@ -40,14 +46,27 @@ namespace KarachiTycoon.Game
             // Each run starts like a first launch (test builds have their own PlayerPrefs).
             PlayerPrefs.DeleteKey("kt_save_v1");
             yield return new WaitForSecondsRealtime(1.5f);
+            if (Offscreen)
+            {
+                var gc0 = FindAnyObjectByType<GameController>(); var ui0 = gc0.GetComponent<GameUi>();
+                int w = int.TryParse(Arg("-screen-width"), out var sw) ? sw : 1600, h = int.TryParse(Arg("-screen-height"), out var sh) ? sh : 900;
+                sceneRT = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                uiRT = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                cam = gc0.Rig.Cam;
+                cam.targetTexture = sceneRT;
+                ui0.Panel.targetTexture = uiRT;
+                ui0.Panel.clearColor = true; ui0.Panel.colorClearValue = new Color(0, 0, 0, 0);
+                yield return null; yield return null;
+            }
             yield return Shot("01_title");
 
             var gc = FindAnyObjectByType<GameController>();
             var ui = gc.GetComponent<GameUi>();
+
             if (Arg("-kt-scenario") == "tutorial") { yield return Tutorial(gc, ui); Application.Quit(); yield break; }
             gc.StartGame(false, 0, "pota");
             // Two upgrades so they show on the thela, and a stamp the first time a daily goal completes.
-            gc.Sim.BuyUpgrade("stools"); gc.Sim.BuyUpgrade("tubelight");
+            gc.Sim.S.Cash += 20000; gc.Sim.UpgradeTrack("kitchen"); gc.Sim.UpgradeTrack("signboard");
             gc.Sim.GoalDone += _ => stampDue = true;
             yield return Advance(gc, 430);
             yield return new WaitForSecondsRealtime(0.5f);
@@ -64,8 +83,21 @@ namespace KarachiTycoon.Game
             gc.Rig.ViewX = gc.Data.District.Pitch.X; gc.Rig.ViewWidth = gc.Rig.MinWidth;
             yield return new WaitForSecondsRealtime(0.5f);
             yield return Shot("06_thela");
+            // The business ladder: every tier rebuilt on the street, in the evening light.
+            float px = gc.Rig.ViewX, pw = gc.Rig.ViewWidth;
+            gc.Rig.ViewX = 3.5f; gc.Rig.ViewWidth = Settings.PhoneLayout ? 13 : 26;
+            foreach (var tier in new[] { "cart2", "dhaba", "dukaan", "restaurant", "famous" })
+            {
+                gc.Sim.DebugTier(tier);
+                for (int i = 0; i < 6 && !gc.Sim.S.DayOver; i++) gc.Sim.Tick(0.5f);
+                yield return new WaitForSecondsRealtime(0.7f);
+                yield return Shot("11_tier_" + tier);
+                if (tier == "dukaan") { ui.DebugShow("Shop"); yield return new WaitForSecondsRealtime(0.6f); yield return Shot("12_upgrades"); ui.DebugShow("none"); }
+            }
+            gc.Rig.ViewX = px; gc.Rig.ViewWidth = pw;
+            gc.Sim.DebugTier("cart", false);
             gc.Rig.ViewX = vx; gc.Rig.ViewWidth = vw;
-            yield return InputTest(gc, ui);
+            if (!Offscreen) yield return InputTest(gc, ui);
             // Story: a choice card, a recipe page, and the Kitaab album.
             gc.Sim.DrawCardNow("constable");
             yield return new WaitForSecondsRealtime(0.8f);
@@ -204,8 +236,36 @@ namespace KarachiTycoon.Game
             }
         }
 
+        void SaveComposite(string name)
+        {
+            if (cam == null) { cam = FindAnyObjectByType<GameController>()?.Rig.Cam; if (cam != null) cam.targetTexture = sceneRT; }
+            if (cam != null) cam.Render();
+            Texture2D Read(RenderTexture rt)
+            {
+                var prev = RenderTexture.active; RenderTexture.active = rt;
+                var t = new Texture2D(rt.width, rt.height, TextureFormat.RGBA32, false);
+                t.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); t.Apply();
+                RenderTexture.active = prev;
+                return t;
+            }
+            var scene = Read(sceneRT); var over = uiRT != null ? Read(uiRT) : null;
+            if (over != null)
+            {
+                var a = scene.GetPixels32(); var b = over.GetPixels32();
+                for (int i = 0; i < a.Length; i++)
+                {
+                    float k = b[i].a / 255f;
+                    a[i] = new Color32((byte)(b[i].r * k + a[i].r * (1 - k)), (byte)(b[i].g * k + a[i].g * (1 - k)), (byte)(b[i].b * k + a[i].b * (1 - k)), 255);
+                }
+                scene.SetPixels32(a); scene.Apply();
+            }
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), scene.EncodeToPNG());
+            Debug.Log("[ShotRunner] " + name);
+        }
+
         IEnumerator Shot(string name)
         {
+            if (Offscreen) { yield return null; yield return null; SaveComposite(name); yield break; }
             yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(dir, name + ".png"));
             yield return new WaitForSecondsRealtime(0.25f);

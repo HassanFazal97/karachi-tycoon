@@ -115,7 +115,7 @@ namespace KarachiTycoon.Game
             }
             bool chaiOn = sim.IsAvailable("chai") && !sim.S.DayOver;
             Run(chaiSteam, chaiOn);
-            Run(degSteam, sim.S.Stage == "dhaba" && !sim.S.DayOver);
+            Run(degSteam, sim.AtLeast("dhaba") && !sim.S.DayOver);
             foreach (var (smoke, sparks) in grills) { Run(smoke, m > 960); Run(sparks, night); }
         }
     }

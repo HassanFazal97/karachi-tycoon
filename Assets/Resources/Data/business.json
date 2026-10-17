@@ -1,0 +1,50 @@
+{
+  "tiers": [
+    { "id": "cart", "name": "Thela", "note": "Dada's old cart on the pavement. One helper, no seats.",
+      "draw": 1.0, "rentWeek": 1500, "staffCap": 1, "maxQueue": 6, "seats": 0, "visit": 1.0, "familyVisit": 0.45, "patience": 1.0, "setupCost": 0,
+      "caps": { "training": 1, "seating": 0, "kitchen": 1, "comfort": 0, "storage": 0, "signboard": 1 } },
+    { "id": "cart2", "name": "Bara thela", "note": "A second cart bolted on, a wider canopy and a row of stools.",
+      "draw": 1.0, "rentWeek": 2500, "staffCap": 1, "maxQueue": 7, "seats": 4, "visit": 1.05, "familyVisit": 0.6, "patience": 1.08, "setupCost": 12000,
+      "caps": { "training": 2, "seating": 1, "kitchen": 2, "comfort": 1, "storage": 1, "signboard": 2 },
+      "requires": { "served": 120, "maxed": ["kitchen", "signboard"] } },
+    { "id": "dhaba", "name": "Pavement dhaba", "note": "A takhta, plastic chairs and the nihari deg in front of the old \"To Let\" shop.",
+      "rentWeek": 6000, "staffCap": 3, "maxQueue": 9, "seats": 10, "visit": 1.15, "familyVisit": 1.4, "patience": 1.3, "setupCost": 35000,
+      "caps": { "training": 3, "seating": 2, "kitchen": 3, "comfort": 2, "storage": 2, "signboard": 3 },
+      "requires": { "act": 1, "maxed": ["kitchen"] } },
+    { "id": "dukaan", "name": "Pakki dukaan", "note": "The \"To Let\" shutter goes up: tables inside, your board over the door, tube lights.",
+      "rentWeek": 14000, "staffCap": 5, "maxQueue": 11, "seats": 24, "visit": 1.3, "familyVisit": 1.7, "patience": 1.45, "setupCost": 150000,
+      "caps": { "training": 4, "seating": 3, "kitchen": 4, "comfort": 3, "storage": 3, "signboard": 4 },
+      "requires": { "act": 2, "maxed": ["seating", "kitchen"] } },
+    { "id": "restaurant", "name": "Family restaurant", "note": "You take the shop next door and the floor above: a family hall, AC, a proper kitchen.",
+      "draw": 1.6, "rentWeek": 30000, "staffCap": 8, "maxQueue": 13, "seats": 40, "visit": 1.45, "familyVisit": 2.0, "patience": 1.6, "setupCost": 450000,
+      "caps": { "training": 5, "seating": 4, "kitchen": 5, "comfort": 4, "storage": 4, "signboard": 5 },
+      "requires": { "fame": 2.8, "served": 6000, "maxed": ["staff", "comfort"] } },
+    { "id": "famous", "name": "Famous restaurant", "note": "Neon over the whole building, a rooftop under the stars, queues down Burns Road.",
+      "draw": 2.0, "rentWeek": 50000, "staffCap": 10, "maxQueue": 15, "seats": 60, "visit": 1.6, "familyVisit": 2.2, "patience": 1.7, "setupCost": 1200000,
+      "caps": { "training": 6, "seating": 5, "kitchen": 6, "comfort": 5, "storage": 4, "signboard": 6 },
+      "requires": { "fame": 3.6, "maxed": ["kitchen", "seating", "signboard"] } }
+  ],
+
+  "tracks": [
+    { "id": "staff", "name": "Staff", "icon": "staff", "note": "Hire the next person on the team. Each one is paid a daily wage.", "base": 0, "growth": 1 },
+    { "id": "training", "name": "Training", "icon": "fast", "note": "Your team works faster: every order is ready sooner.", "base": 3000, "growth": 1.8, "per": 0.06, "unit": "faster service" },
+    { "id": "seating", "name": "Seating", "icon": "seat", "note": "More places to sit. Seated customers wait longer and families stay.", "base": 4000, "growth": 1.9, "per": 0.05, "unit": "more patience" },
+    { "id": "kitchen", "name": "Kitchen", "icon": "chai", "note": "Bigger kettles, more burners, a better tawa: food cooks faster.", "base": 3500, "growth": 1.85, "per": 0.07, "unit": "faster cooking" },
+    { "id": "comfort", "name": "Comfort", "icon": "fan", "note": "A pedestal fan, then a cooler, then AC. Comfortable people wait longer.", "base": 3500, "growth": 1.85, "per": 0.06, "unit": "more patience" },
+    { "id": "storage", "name": "Storage", "icon": "supplies", "note": "An ice box, then a fridge, then a cold room: less stock spoils overnight.", "base": 3000, "growth": 1.8, "per": 0.15, "unit": "less spoilage" },
+    { "id": "signboard", "name": "Signboard", "icon": "shop", "note": "A painted board, tube lights, truck art, then neon: more people stop.", "base": 3000, "growth": 1.85, "per": 0.05, "unit": "more visitors" }
+  ],
+
+  "seatsIndoor": [[2.0, -6.6], [6.0, -6.6]],
+  "seatsCart": [[2.0, -2.75], [2.65, -2.75], [2.0, -2.1], [2.65, -2.1]],
+
+  "districts": [
+    { "id": "burns_road", "name": "Burns Road", "format": "Food street: thela to famous restaurant", "x": 0.43, "y": 0.62, "open": true },
+    { "id": "saddar", "name": "Saddar & Jodia Bazaar", "format": "Wholesale bazaar: a chai and paratha stall for traders", "x": 0.33, "y": 0.66, "unlock": "Run a family restaurant on Burns Road" },
+    { "id": "bahadurabad", "name": "Bahadurabad & Tariq Road", "format": "Family restaurant on the shopping strip", "x": 0.6, "y": 0.5, "unlock": "Famous restaurant on Burns Road" },
+    { "id": "gulshan", "name": "Gulshan & Jauhar", "format": "Fast food for students and young families", "x": 0.78, "y": 0.3, "unlock": "Two branches open" },
+    { "id": "clifton", "name": "Clifton & Boat Basin", "format": "Seafront BBQ under the lights", "x": 0.4, "y": 0.84, "unlock": "4.5 stars of Shohrat" },
+    { "id": "dha", "name": "Zamzama & DHA", "format": "A café for the smart crowd", "x": 0.62, "y": 0.8, "unlock": "Three branches open" },
+    { "id": "do_darya", "name": "Do Darya", "format": "The flagship by the sea", "x": 0.74, "y": 0.92, "unlock": "Every district conquered" }
+  ]
+}

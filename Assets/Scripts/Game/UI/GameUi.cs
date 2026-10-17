@@ -124,7 +124,7 @@ namespace KarachiTycoon.Game
         void Update()
         {
             if (root == null) return;
-            if (Screen.safeArea != lastSafeArea && root.layout.width > 0) ApplySafeArea();
+            if (panelSettings.targetTexture == null && Screen.safeArea != lastSafeArea && root.layout.width > 0) ApplySafeArea();
             hudBind.Update(); sheetBind.Update(); modalBind.Update();
             if (goalsDirty && goalsRows != null) FillGoals();
             goalsBind.Update();
@@ -154,6 +154,8 @@ namespace KarachiTycoon.Game
         }
 
         // Used by ShotRunner to put the UI into a given state.
+        public PanelSettings Panel => panelSettings;
+
         public void DebugShow(string what)
         {
             CloseModal(); CloseSheet();
@@ -259,7 +261,7 @@ namespace KarachiTycoon.Game
         static readonly (string id, string icon, string label, Key key)[] Tabs =
         {
             ("Menu", "menu", "Menu", Key.M), ("Supplies", "supplies", "Supplies", Key.S),
-            ("Staff", "staff", "Staff", Key.H), ("Shop", "shop", "Shop", Key.B), ("Store", "store", "Store", Key.None),
+            ("Staff", "staff", "Staff", Key.H), ("Shop", "shop", "Upgrades", Key.U), ("Store", "store", "Store", Key.None),
         };
 
         void BuildHud()
@@ -312,16 +314,29 @@ namespace KarachiTycoon.Game
             if (phone) goalHead.With(Div("grow"), rep); // phones: the stars sit on the goal row, the top row is full
             goal.With(goalHead, Div("goal-line").With(bar1, l1), Div("goal-line").With(bar2, l2));
             top.Add(goal);
-            hudBind.Text(goalTitle, () => sim.S.Stage == "cart" ? "ACT 1 · THE CART" : sim.S.Act2Done ? "BURNS ROAD KNOWS YOUR NAME" : "ACT 2 · THE PAVEMENT DHABA");
-            hudBind.Fill(fill1, () => sim.S.Stage == "cart" ? sim.S.TotalRevenue / (float)b.Act1.Revenue : sim.S.Cash / (float)b.Act2.Cash);
-            hudBind.Fill(fill2, () => sim.S.Stage == "cart" ? sim.S.TotalServed / (float)b.Act1.Served : sim.S.Fame / b.Act2.Fame);
+            // Act 1, then Act 2, then the next rung of the ladder.
+            int Stage3() => !sim.S.Act1Done ? 1 : !sim.S.Act2Done ? 2 : 3;
+            hudBind.Text(goalTitle, () => Stage3() == 1 ? "ACT 1 · THE CART" : Stage3() == 2 ? "ACT 2 · BURNS ROAD KNOWS YOUR NAME"
+                : sim.NextTier != null ? "NEXT: " + sim.NextTier.Name.ToUpperInvariant() : "BURNS ROAD IS YOURS");
+            hudBind.Fill(fill1, () => Stage3() == 1 ? sim.S.TotalRevenue / (float)b.Act1.Revenue : Stage3() == 2 ? sim.S.Cash / (float)b.Act2.Cash
+                : sim.NextTier != null ? sim.S.Cash / (float)sim.NextTier.SetupCost : 1);
+            hudBind.Fill(fill2, () =>
+            {
+                if (Stage3() == 1) return sim.S.TotalServed / (float)b.Act1.Served;
+                if (Stage3() == 2) return sim.S.Fame / b.Act2.Fame;
+                var n = sim.TierNeeds(); return n.Count == 0 ? 1 : n.Count(x => x.met) / (float)n.Count;
+            });
             string earned = phone ? "" : " earned", saved = phone ? "" : " saved", served = phone ? "" : " served";
-            hudBind.Text(l1, () => sim.S.Stage == "cart"
+            hudBind.Text(l1, () => Stage3() == 1
                 ? $"{RsShort(Mathf.Min(sim.S.TotalRevenue, b.Act1.Revenue))} / {RsShort(b.Act1.Revenue).Replace("Rs ", "")}{earned}"
-                : $"{RsShort(Mathf.Min(sim.S.Cash, b.Act2.Cash))} / {RsShort(b.Act2.Cash).Replace("Rs ", "")}{saved}");
-            hudBind.Text(l2, () => sim.S.Stage == "cart"
-                ? $"{Mathf.Min(sim.S.TotalServed, b.Act1.Served)} / {b.Act1.Served}{served}"
-                : $"{(phone ? "" : "Shohrat ")}{sim.S.Fame:F1} / {b.Act2.Fame:F0} stars");
+                : Stage3() == 2 ? $"{RsShort(Mathf.Min(sim.S.Cash, b.Act2.Cash))} / {RsShort(b.Act2.Cash).Replace("Rs ", "")}{saved}"
+                : sim.NextTier != null ? $"{RsShort(Mathf.Min(sim.S.Cash, sim.NextTier.SetupCost))} / {RsShort(sim.NextTier.SetupCost).Replace("Rs ", "")}" : "");
+            hudBind.Text(l2, () =>
+            {
+                if (Stage3() == 1) return $"{Mathf.Min(sim.S.TotalServed, b.Act1.Served)} / {b.Act1.Served}{served}";
+                if (Stage3() == 2) return $"{(phone ? "" : "Shohrat ")}{sim.S.Fame:F1} / {b.Act2.Fame:F0} stars";
+                var n = sim.TierNeeds(); return $"{n.Count(x => x.met)} / {n.Count} ready";
+            });
 
             // Speed.
             var speed = Div("speed");
@@ -421,10 +436,9 @@ namespace KarachiTycoon.Game
             {
                 case "Menu": return gc.Data.Dishes.Any(d => !sim.IsLocked(d.Id) && (!seenDishes.Contains(d.Id) || (s.Menu[d.Id].On && sim.PriceRatio(d.Id) > 1.2f)));
                 case "Supplies": return sim.NeededIngredients().Any(i => s.Stock[i] < 10);
-                case "Staff": return s.Stage == "dhaba" && !s.Staff["karigar"];
+                case "Staff": return !sim.Maxed("staff") && s.Cash >= sim.TrackCost("staff") + 10000;
                 case "Shop":
-                    return (s.Act1Done && s.Stage == "cart" && s.Cash >= gc.Data.Balance.Stages["dhaba"].SetupCost)
-                        || (s.Stage == "dhaba" && !s.Generator && s.Cash >= gc.Data.Balance.Generator.Cost);
+                    return sim.TierReady || gc.Data.Business.Tracks.Any(t => t.Id != "staff" && !sim.Maxed(t.Id) && s.Cash >= sim.TrackCost(t.Id) * 2);
                 default: return false;
             }
         }

@@ -1,6 +1,22 @@
 [
-  {"id":"chhotu","en":"Chhotu (helper)","ur":"چھوٹو","name":"Bilal","wage":700,
+  {"id":"chhotu","en":"Chhotu (helper)","ur":"چھوٹو","name":"Nadeem","wage":700,"role":"helper",
    "does":"Serves, pours water and keeps the line moving. Orders go 30% faster and people wait longer.","speed":0.7,"patience":1.15},
-  {"id":"karigar","en":"Karigar (cook)","ur":"کاریگر","name":"Ustad Saleem","wage":1400,
-   "does":"A second pair of hands at the tawa. Cooks orders in parallel, better taste, and makes nihari possible.","cooks":1,"quality":8}
+  {"id":"karigar","en":"Karigar (cook)","ur":"کاریگر","name":"Ustad Saleem","wage":1400,"role":"cook",
+   "does":"A second pair of hands at the tawa. Cooks orders in parallel, better taste, and makes nihari possible at the dhaba.","cooks":1,"quality":8},
+  {"id":"waiter1","en":"Waiter","ur":"ویٹر","name":"Imran","wage":900,"role":"waiter",
+   "does":"Takes orders at the tables so nobody waits to be noticed. People wait longer.","patience":1.1,"speed":0.95},
+  {"id":"cook2","en":"Second cook","ur":"باورچی","name":"Shakeel","wage":1300,"role":"cook",
+   "does":"Another burner, another pair of hands. One more order cooks at the same time.","cooks":1,"quality":3},
+  {"id":"cashier","en":"Cashier","ur":"کیشیئر","name":"Babar","wage":1100,"role":"cashier",
+   "does":"Runs the galla so the cooks never touch money. Everything moves a little faster.","speed":0.92},
+  {"id":"waiter2","en":"Waiter","ur":"ویٹر","name":"Asif","wage":900,"role":"waiter",
+   "does":"A second waiter for the hall. Families wait longer and come back.","patience":1.08},
+  {"id":"cook3","en":"Tandoor cook","ur":"تندورچی","name":"Rafiq","wage":1400,"role":"cook",
+   "does":"Naan straight from the tandoor, and one more order on the fire.","cooks":1,"quality":4},
+  {"id":"helper2","en":"Helper","ur":"مددگار","name":"Javed","wage":750,"role":"helper",
+   "does":"Washes, carries and clears tables. Orders move faster.","speed":0.9},
+  {"id":"manager","en":"Manager","ur":"منیجر","name":"Sultan Sahib","wage":2500,"role":"manager",
+   "does":"Keeps the whole team sharp. Better food, faster service, calmer customers.","speed":0.94,"patience":1.06,"quality":4},
+  {"id":"cook4","en":"Head cook","ur":"ہیڈ باورچی","name":"Ustad Ghaffar","wage":1800,"role":"cook",
+   "does":"Forty years at Burns Road degs. One more order on the fire, and a better taste.","cooks":1,"quality":6}
 ]

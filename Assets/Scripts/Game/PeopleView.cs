@@ -191,13 +191,15 @@ namespace KarachiTycoon.Game
                 if (moved > 0.0005f) p.Root.rotation = Quaternion.LookRotation(dir.normalized);
                 else if (c.State == "queue" || c.State == "rival") p.Root.rotation = Quaternion.LookRotation(Vector3.forward); // face the stall
                 p.Last = pos;
-                bool eating = c.State == "eating" && c.Seats != null;
+                bool eating = c.State == "eating" && c.SeatAt != null && c.Seats != null;
                 for (int i = 0; i < p.Bodies.Count; i++)
                 {
                     var (l, r) = p.Legs[i];
                     if (eating)
                     {
-                        var st = sim.D.District.Seats[c.Seats[Mathf.Min(i, c.Seats.Length - 1)]];
+                        var st = c.SeatAt[Mathf.Min(i, c.SeatAt.Count - 1)];
+                        // Seats inside the dukaan or restaurant: they have gone in, so hide them until they leave.
+                        p.Bodies[i].gameObject.SetActive(st[1] > -5.9f);
                         p.Bodies[i].position = W(st[0], (st[1] < -2.7f ? 0.16f : 0) - 0.36f * p.Bodies[i].localScale.y, st[1]);
                         l.localRotation = r.localRotation = Quaternion.Euler(-85, 0, 0);
                         var table = NearestTable(st[0], st[1]);
@@ -206,6 +208,7 @@ namespace KarachiTycoon.Game
                     }
                     else
                     {
+                        if (!p.Bodies[i].gameObject.activeSelf) p.Bodies[i].gameObject.SetActive(true);
                         p.Bodies[i].localPosition = p.Offsets[i]; p.Bodies[i].localRotation = Quaternion.identity;
                         if (moved > 0.0005f) p.Phase += moved * 4.2f;
                         float a = moved > 0.0005f ? Mathf.Sin(p.Phase) * 32 : 0;

@@ -50,7 +50,7 @@ namespace KarachiTycoon.Sim
         public string Stage = "cart";
         public int Act = 1;
         public bool Act1Done, Act2Done, DayOver, Generator;
-        public Dictionary<string, bool> Staff = new() { ["chhotu"] = false, ["karigar"] = false };
+        public Dictionary<string, bool> Staff = new();
         public Dictionary<string, MenuEntry> Menu = new();
         public string Fat = "ghee";
         public Dictionary<string, int> Stock = new();
@@ -69,7 +69,8 @@ namespace KarachiTycoon.Sim
         // One-time hints and unlock explainers already shown.
         public List<string> Seen = new();
         public List<DailyGoal> Goals = new();
-        public List<string> Owned = new();   // thela upgrades bought
+        public List<string> Owned = new();   // M3 thela upgrades (old saves; migrated into Tracks)
+        public Dictionary<string, int> Tracks = new();   // upgrade track levels (staff is counted from Staff)
         // Story: friendship points with each named regular, Dada's recipe pages found, choice cards
         // already drawn (no repeats until all are used), and Uncle Rasheed's quest line.
         public Dictionary<string, int> Friends = new();

@@ -109,7 +109,8 @@ namespace KarachiTycoon.Game
         void Apply()
         {
             if (Cam == null) return;
-            float aspect = (float)Screen.width / Mathf.Max(1, Screen.height);
+            // pixelWidth/Height follow a target texture too (headless screenshots).
+            float aspect = (float)Cam.pixelWidth / Mathf.Max(1, Cam.pixelHeight);
             Cam.orthographicSize = ViewWidth / aspect / 2;
             var target = W(ViewX, 3.2f + ViewWidth * 0.06f, -3.5f);
             var dir = new Vector3(0.22f, 0.6f, -0.77f).normalized;

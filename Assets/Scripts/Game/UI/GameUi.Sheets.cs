@@ -38,7 +38,7 @@ namespace KarachiTycoon.Game
             sheetOpen = id;
             var tab = Tabs.First(t => t.id == id);
             sheetIcon.Set(tab.icon);
-            sheetTitle.text = id switch { "Menu" => "Menu board", "Shop" => sim.S.ShopName, _ => id };
+            sheetTitle.text = id switch { "Menu" => "Menu board", "Shop" => "Upgrades", "Staff" => "Your team", _ => id };
             FillSheet();
             sheetBody.scrollOffset = Vector2.zero;
             sheet.AddToClassList("open");
@@ -175,74 +175,141 @@ namespace KarachiTycoon.Game
             var s = sim.S;
             var cap = Text("", "hint");
             Add(cap);
-            sheetBind.Text(cap, () => $"{(s.Stage == "cart" ? "The thela" : "The dhaba")} has room for {sim.Stage.StaffCap}. {sim.StaffCount} hired.");
+            sheetBind.Text(cap, () => $"The {sim.Stage.Name} has room for {sim.Stage.StaffCap}. {sim.StaffCount} on the team, Rs {gc.Data.Staff.Where(st => sim.Hired(st.Id)).Sum(st => st.Wage):N0} a day in wages.");
+            // The next hire, then the team.
+            var next = Div("card", "next-hire");
+            Add(next);
+            var nextName = Text("", "h2"); var nextDoes = Text("", "body");
+            var hireBtn = Btn("", () => sim.UpgradeTrack("staff"), "btn-primary", "wide").Named("hire-next");
+            next.With(Text("NEXT HIRE", "section-title"), nextName, nextDoes, hireBtn);
+            sheetBind.Visible(next, () => sim.NextHire != null);
+            sheetBind.Text(nextName, () => sim.NextHire is var n && n != null ? $"{n.Name} · {n.En}" : "");
+            sheetBind.Text(nextDoes, () => sim.NextHire?.Does ?? "");
+            sheetBind.Text(hireBtn, () => sim.Maxed("staff") ? $"Team full for the {sim.Stage.Name}: build the next tier for more" : $"Hire · {Rs(sim.TrackCost("staff"))} now, {Rs(sim.NextHire?.Wage ?? 0)}/day");
+            sheetBind.Enabled(hireBtn, () => !sim.Maxed("staff") && s.Cash >= sim.TrackCost("staff"));
             foreach (var st in gc.Data.Staff)
             {
                 var id = st.Id;
-                var card = Div("card", "staff-card");
+                var card = Div("card", "staff-card", "hired");
                 Add(card);
                 card.Add(Div("row").With(Div("portrait").With(new Icon("staff")), Div("col", "grow").With(Text(st.Name, "h2"), Text(st.En, "muted", "small")), Text($"{Rs(st.Wage)}/day", "ink")));
                 card.Add(Text(st.Does, "body"));
-                var hire = Btn("", () => { if (s.Staff[id]) sim.Fire(id); else sim.Hire(id); }, "wide");
-                card.Add(hire);
-                sheetBind.Text(hire, () => s.Staff[id] ? "Let go" : "Hire");
-                sheetBind.Class(hire, "btn-primary", () => !s.Staff[id]);
-                sheetBind.Class(card, "hired", () => s.Staff[id]);
+                card.Add(Btn("Let go", () => sim.Fire(id), "wide"));
+                sheetBind.Visible(card, () => sim.Hired(id));
             }
         }
 
-        // ---------- Shop ----------
+        // ---------- Upgrades: the business ladder and the tracks ----------
         void ShopSheet()
         {
             var s = sim.S; var b = gc.Data.Balance;
-            Add(Text("Thela upgrades", "section-title"));
-            foreach (var u in gc.Data.Upgrades)
+            var tiers = sim.Tiers;
+
+            // Where you are on the ladder.
+            var ladder = Div("card", "ladder-card");
+            Add(ladder);
+            ladder.Add(Text("YOUR PLACE ON BURNS ROAD", "section-title"));
+            var steps = Div("row", "ladder");
+            for (int i = 0; i < tiers.Count; i++)
             {
-                var id = u.Id;
-                var card = Div("card", "upgrade-card");
+                int k = i;
+                var step = Div("ladder-step").With(Div("ladder-dot"), Text(tiers[i].Name, "ladder-name"));
+                sheetBind.Class(step, "done", () => sim.TierIndex > k);
+                sheetBind.Class(step, "now", () => sim.TierIndex == k);
+                steps.Add(step);
+            }
+            ladder.Add(steps);
+            var now = Text("", "h2"); var nowNote = Text("", "muted", "small");
+            ladder.With(now, nowNote);
+            sheetBind.Text(now, () => $"Now: {sim.Stage.Name}");
+            sheetBind.Text(nowNote, () => sim.Stage.Note);
+
+            // The next rung.
+            var nextCard = Div("card", "tier-card");
+            Add(nextCard);
+            var nextTitle = Text("", "h2"); var nextNote = Text("", "muted", "small");
+            var needs = Div("col", "needs");
+            var build = Btn("", () => sim.UpgradeTier(), "btn-primary", "wide").Named("tier-up");
+            nextCard.With(Text("NEXT", "section-title"), nextTitle, nextNote, needs, build);
+            string needSig = null;
+            sheetBind.Do(() =>
+            {
+                var t = sim.NextTier;
+                nextTitle.text = t == null ? "The top of Burns Road" : t.Name;
+                nextNote.text = t == null ? "Next chapter: a branch in another part of Karachi (coming soon)." : t.Note;
+                var list = sim.TierNeeds();
+                var sig = string.Join("|", list.Select(n => n.met + n.text));
+                if (sig != needSig)
+                {
+                    needSig = sig; needs.Clear();
+                    foreach (var (text, met) in list)
+                        needs.Add(Div("row", "need").Cls(met ? "met" : "unmet").With(new Icon(met ? "check" : "circle").Cls("need-mark"), Text(text, "need-text")));
+                }
+                build.text = t == null ? "Burns Road is yours" : $"Build the {t.Name} · {Rs(t.SetupCost)}";
+                build.SetEnabled(sim.TierReady);
+            });
+
+            Add(Text("UPGRADES", "section-title"));
+            Add(Text("Each track tops out at your current place. Build the next one to raise the limits.", "hint"));
+            foreach (var tr in gc.Data.Business.Tracks)
+            {
+                var id = tr.Id;
+                var card = Div("card", "track-card");
                 Add(card);
-                card.Add(Div("row").With(Text(u.En, "h2", "grow"), Text(Rs(u.Cost), "chip", "chip-plain")));
-                card.Add(Text(u.Note, "muted", "small"));
-                var buy = Btn($"Buy · {Rs(u.Cost)}", () => sim.BuyUpgrade(id), "btn-primary", "wide");
-                buy.name = "upgrade-" + id;
-                var owned = Text("On your thela", "chip", "chip-good");
-                card.With(buy, owned);
-                sheetBind.Visible(buy, () => !sim.Owns(id));
-                sheetBind.Visible(owned, () => sim.Owns(id));
-                sheetBind.Enabled(buy, () => s.Cash >= u.Cost);
-                sheetBind.Class(card, "hired", () => sim.Owns(id));
+                var level = Text("", "track-level");
+                card.Add(Div("row").With(new Icon(tr.Icon).Cls("track-icon"), Text(tr.Name, "h2", "grow"), level));
+                var pips = Div("row", "pips");
+                card.Add(pips);
+                card.Add(Text(tr.Note, "muted", "small"));
+                var effect = Text("", "track-effect");
+                card.Add(effect);
+                var btn = Btn("", () => sim.UpgradeTrack(id), "btn-primary", "wide").Named("track-" + id);
+                var max = Text("", "max-stamp");
+                card.With(btn, max);
+                int shownCap = -1;
+                sheetBind.Do(() =>
+                {
+                    int cap = sim.Cap(id), L = sim.Level(id);
+                    if (cap != shownCap) { shownCap = cap; pips.Clear(); for (int k = 0; k < Mathf.Max(cap, 1); k++) pips.Add(Div("pip")); }
+                    for (int k = 0; k < pips.childCount; k++) pips[k].EnableInClassList("on", k < L);
+                    level.text = cap == 0 ? "locked here" : $"{Mathf.Min(L, cap)} / {cap}";
+                    effect.text = TrackEffect(tr, L, cap);
+                    bool maxed = L >= cap;
+                    btn.Show(!maxed); max.Show(maxed);
+                    max.text = cap == 0 ? $"Opens with the next place" : L >= sim.FinalCap(id) ? "MAX" : $"MAX for the {sim.Stage.Name}";
+                    btn.text = id == "staff"
+                        ? $"Hire {sim.NextHire?.Name} ({sim.NextHire?.En}) · {Rs(sim.TrackCost(id))}"
+                        : $"Upgrade · {Rs(sim.TrackCost(id))}";
+                    btn.SetEnabled(!maxed && s.Cash >= sim.TrackCost(id));
+                });
             }
-            Add(Text("Bigger plans", "section-title"));
-            var dh = b.Stages["dhaba"];
-            var dhaba = Div("card");
-            Add(dhaba);
-            dhaba.Add(Text("Pavement dhaba", "h2"));
-            dhaba.Add(Text($"A takhta and plastic chairs in front of the old \"To Let\" shop. Room for {dh.Seats} to sit and {dh.StaffCap} staff.", "muted", "small"));
-            if (s.Stage == "dhaba") dhaba.Add(Text("Open", "chip", "chip-good"));
-            else if (s.Act1Done)
-            {
-                var rent = Btn($"Set up the dhaba · {Rs(dh.SetupCost)}", () => sim.RentDhaba(), "btn-primary", "wide");
-                sheetBind.Enabled(rent, () => s.Cash >= dh.SetupCost);
-                dhaba.Add(rent);
-            }
-            else dhaba.Add(Text($"Finish Act 1 first: {Rs(b.Act1.Revenue)} earned and {b.Act1.Served} served.", "muted"));
 
             var gen = Div("card");
             Add(gen);
             gen.Add(Text("Generator", "h2"));
             gen.Add(Text($"Keeps the lights and kitchen going through load shedding. Burns about {Rs(b.Generator.FuelPerHour)} of fuel an hour while running.", "muted", "small"));
             if (s.Generator) gen.Add(Text("Installed", "chip", "chip-good"));
-            else if (s.Stage == "dhaba")
+            else if (sim.AtLeast("dhaba"))
             {
                 var buy = Btn($"Buy a generator · {Rs(b.Generator.Cost)}", () => sim.BuyGenerator(), "btn-primary", "wide");
                 sheetBind.Enabled(buy, () => s.Cash >= b.Generator.Cost);
                 gen.Add(buy);
             }
-            else gen.Add(Text("Needs the dhaba.", "muted"));
+            else gen.Add(Text("Needs the pavement dhaba.", "muted"));
 
             var stats = Text("", "muted");
             Add(Div("card").With(Text("So far", "h2"), stats));
             sheetBind.Text(stats, () => $"{s.TotalServed:N0} customers served · {Rs(s.TotalRevenue)} taken in total · day {s.Day}");
+        }
+
+        // "Now 12% faster cooking · next 18%", in words a player can weigh against the price.
+        string TrackEffect(KarachiTycoon.Sim.TrackDef tr, int level, int cap)
+        {
+            if (tr.Id == "staff") return $"{sim.StaffCount} on the team · room for {sim.Stage.StaffCap}";
+            string Pct(int l) => $"{Mathf.RoundToInt(tr.Per * l * 100)}%";
+            string now = level == 0 ? "Nothing yet" : $"Now {Pct(level)} {tr.Unit}";
+            if (tr.Id == "seating") now += $" · {sim.SeatsAvailable} seats";
+            return level >= cap ? now : $"{now} · next {Pct(level + 1)}";
         }
 
         // ---------- Store ----------

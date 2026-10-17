@@ -31,6 +31,13 @@ namespace KarachiTycoon.Game
         public readonly Dictionary<string, GameObject> Items = new Dictionary<string, GameObject>();
         public GameObject Dhaba, Stall;
         public readonly List<Transform> Grills = new List<Transform>();
+        // The building that the dukaan and restaurant take over.
+        GameObject toLetShutter, toLetSign, neighbourSign, cart2Group, dukaanGroup, restaurantGroup, famousGroup;
+        readonly List<GameObject> chairs = new List<GameObject>();
+        readonly Dictionary<string, List<(int level, GameObject go)>> trackProps = new Dictionary<string, List<(int, GameObject)>>();
+        GameObject smallKettle;
+        float homeX, homeH; int homeBay = -1;
+        GameState state;
         GameData d;
         System.Random rng;
 
@@ -38,7 +45,7 @@ namespace KarachiTycoon.Game
 
         public void Build(GameData data, GameState s)
         {
-            d = data; rng = new System.Random(31);
+            d = data; rng = new System.Random(31); state = s;
             BuildGround();
             for (int i = 0; i < d.District.Buildings.Count; i++) BuildBuilding(d.District.Buildings[i], -32 + i * 8 + 4);
             BuildSkyline();
@@ -47,9 +54,13 @@ namespace KarachiTycoon.Game
             BuildDhaba(s);
             BuildRivals();
             BuildStreetLife();
+            BuildLadder();
             // The street never moves: merge it into static batches so phones draw far fewer batches.
             // (Items and upgrades can still be shown or hidden; glowing materials keep their own colours.)
-            StaticBatchingUtility.Combine(gameObject);
+            // Only the parts that never change: the stall, the dhaba and the tier builds toggle on and off.
+            foreach (Transform child in transform)
+                if (child.name == "ground" || child.name.StartsWith("building_") || child.name == "skyline" || child.name == "poles" || child.name == "street_life")
+                    StaticBatchingUtility.Combine(child.gameObject);
         }
 
         Transform Group(string name, Vector3 pos)
@@ -166,7 +177,7 @@ namespace KarachiTycoon.Game
                 float sx = x0 - 4 + bay * 4 + 2;
                 var sign = b.Signs.Find(s => s.Bay == bay);
                 bool shut = sign != null && sign.Shut;
-                Box(t, W(sx, 1.4f, -5.96f), new Vector3(3.3f, 2.75f, 0.06f), shut ? MatTex("#7A817A", "shutter", new Vector2(1, 3)) : Mat("#4A3A2C"), shut ? "shutter_down" : "shop_interior");
+                var front = Box(t, W(sx, 1.4f, -5.96f), new Vector3(3.3f, 2.75f, 0.06f), shut ? MatTex("#7A817A", "shutter", new Vector2(1, 3)) : Mat("#4A3A2C"), shut ? "shutter_down" : "shop_interior");
                 // Posters pasted on the pilasters, newer over older.
                 if (r.NextDouble() < 0.6)
                 {
@@ -176,7 +187,10 @@ namespace KarachiTycoon.Game
                             .transform.localRotation = Quaternion.Euler(0, 0, (float)(r.NextDouble() - 0.5) * 10);
                 }
                 if (!shut) AddGlow(t, W(sx, 2.82f, -5.9f), new Vector3(1.6f, 0.05f, 0.05f), "#E8F4F0", 1.6f);
-                if (sign != null) BuildSign(t, W(sx, 3.12f, -5.9f), new Vector2(3.6f, 0.64f), sign.En, sign.Ur, sign.Bg, sign.Fg);
+                var board = sign != null ? BuildSign(t, W(sx, 3.12f, -5.9f), new Vector2(3.6f, 0.64f), sign.En, sign.Ur, sign.Bg, sign.Fg) : null;
+                // The "To Let" shop and its building are where the player's place grows (dukaan, restaurant).
+                if (sign != null && sign.En == "TO LET") { toLetShutter = front; toLetSign = board; homeX = x0; homeH = h; homeBay = bay; }
+                else if (homeBay >= 0 && x0 == homeX && bay != homeBay) neighbourSign = board;
             }
             // Cool tube light spilling out of the open shops onto the pavement (one light per building, phone friendly).
             if (b.Signs.Count(sg => !sg.Shut) > 0 || b.Signs.Count < 2) AddLight("#E8F4F0", W(x0, 2.5f, -4.9f), 0.7f, 7);
@@ -194,7 +208,7 @@ namespace KarachiTycoon.Game
 
         // Signboards use pre-painted Nastaliq textures (Resources/Signs) where they exist, because
         // Unity text does not shape Urdu Nastaliq. Otherwise a plain panel with the English name.
-        void BuildSign(Transform parent, Vector3 pos, Vector2 size, string en, string ur, string bg, string fg)
+        GameObject BuildSign(Transform parent, Vector3 pos, Vector2 size, string en, string ur, string bg, string fg)
         {
             var tex = Resources.Load<Texture2D>("Signs/" + Slug(en));
             var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -225,6 +239,7 @@ namespace KarachiTycoon.Game
                 var font = UiFont; if (font != null) { label.font = font; label.GetComponent<MeshRenderer>().sharedMaterial = font.material; }
             }
             quad.GetComponent<Renderer>().sharedMaterial = m;
+            return quad;
         }
 
         public static string Slug(string s)
@@ -313,28 +328,39 @@ namespace KarachiTycoon.Game
             var tawa = new GameObject("bun_kabab").transform; tawa.SetParent(t, false); tawa.localPosition = new Vector3(0.2f, 1.05f, 0);
             Cyl(tawa, new Vector3(0, 0.08f, 0), 0.32f, 0.04f, Mat("#1E1C1A", 0.4f, 0.5f), "tawa");
             Items["bun_kabab"] = tawa.gameObject;
-            // Upgrades, shown once bought (RefreshStage).
+            // Track props on the cart, shown by level (RefreshStage).
             var up = new GameObject("upgrades").transform; up.SetParent(t, false);
-            var stools = Group2(up, "upgrade_stools");
-            for (int i = 0; i < 3; i++)
-            {
-                var sx = -0.9f + i * 0.9f;
-                Cyl(stools, new Vector3(sx, 0.22f, -1.25f), 0.17f, 0.04f, Mat(i % 2 == 0 ? "#C8202F" : "#2B6FA8", 0.4f), "stool_seat");
-                Cyl(stools, new Vector3(sx, 0.1f, -1.25f), 0.13f, 0.2f, Mat(i % 2 == 0 ? "#A81A27" : "#235C8C", 0.4f), "stool_legs");
-            }
-            var bigKettle = Group2(up, "upgrade_kettle");
+            var bigKettle = Group2(up, "kitchen_kettle");
             bigKettle.localPosition = new Vector3(-0.6f, 1.05f, 0);
             Cyl(bigKettle, new Vector3(0, 0.33f, 0), 0.19f, 0.4f, Mat("#D2D0C8", 0.75f, 0.8f), "big_kettle");
             Cyl(bigKettle, new Vector3(0.22f, 0.42f, 0), 0.03f, 0.18f, Mat("#D2D0C8", 0.75f, 0.8f), "spout").transform.localRotation = Quaternion.Euler(0, 0, -50);
-            var tawa2 = Group2(up, "upgrade_tawa2");
+            Prop("kitchen", 1, bigKettle.gameObject);
+            var tawa2 = Group2(up, "kitchen_tawa2");
             Cyl(tawa2, new Vector3(0.2f, 1.13f, 0.32f), 0.26f, 0.04f, Mat("#1E1C1A", 0.4f, 0.5f), "tawa_2");
-            var tube = Group2(up, "upgrade_tubelight");
-            var tg = AddGlow(tube, new Vector3(0, 2.0f, -0.5f), new Vector3(1.6f, 0.05f, 0.05f), "#E8F4F0", 3.2f); tg.Backed = true;
-            var art = Group2(up, "upgrade_sign");
+            Prop("kitchen", 2, tawa2.gameObject);
+            var art = Group2(up, "signboard_art");
             string[] truck = { "#C8202F", "#E8C35A", "#2B6FA8", "#3E8E5E", "#E58B2A" };
             for (int i = 0; i < 10; i++)
                 Box(art, new Vector3(-0.99f + i * 0.22f, 2.42f, -0.62f), new Vector3(0.2f, 0.22f, 0.03f), Mat(truck[i % truck.Length], 0.5f), "truck_art");
             Box(art, new Vector3(0, 2.56f, -0.62f), new Vector3(2.2f, 0.05f, 0.04f), Mat("#F2D24A", 0.6f, 0.4f), "truck_trim");
+            Prop("signboard", 1, art.gameObject);
+            var tube = Group2(up, "signboard_tube");
+            var tg = AddGlow(tube, new Vector3(0, 2.0f, -0.5f), new Vector3(1.6f, 0.05f, 0.05f), "#E8F4F0", 3.2f); tg.Backed = true;
+            Prop("signboard", 2, tube.gameObject);
+            // Comfort and storage beside the cart: a pedestal fan, an air cooler, an ice box.
+            var fan = Group2(up, "comfort_fan");
+            Cyl(fan, new Vector3(1.45f, 0.65f, 0.1f), 0.03f, 1.3f, Mat("#4A4744"), "fan_pole");
+            Cyl(fan, new Vector3(1.45f, 1.35f, 0.02f), 0.24f, 0.05f, Mat("#9FC8E8", 0.5f), "fan_head").transform.localRotation = Quaternion.Euler(90, 0, 0);
+            Prop("comfort", 1, fan.gameObject);
+            var cooler = Group2(up, "comfort_cooler");
+            Box(cooler, new Vector3(-1.55f, 0.45f, 0.3f), new Vector3(0.6f, 0.9f, 0.5f), Mat("#C9D8C5", 0.3f), "air_cooler");
+            Box(cooler, new Vector3(-1.55f, 0.55f, 0.04f), new Vector3(0.45f, 0.5f, 0.02f), Mat("#5E8C61", 0.3f), "cooler_grille");
+            Prop("comfort", 2, cooler.gameObject);
+            var icebox = Group2(up, "storage_icebox");
+            Box(icebox, new Vector3(-1.1f, 0.25f, -0.75f), new Vector3(0.6f, 0.5f, 0.42f), Mat("#2B6FA8", 0.4f), "ice_box");
+            Box(icebox, new Vector3(-1.1f, 0.52f, -0.75f), new Vector3(0.62f, 0.05f, 0.44f), Mat("#EDE6D6", 0.4f), "ice_box_lid");
+            Prop("storage", 1, icebox.gameObject);
+            smallKettle = chai.Find("kettle")?.gameObject;
             var karahi = new GameObject("samosa").transform; karahi.SetParent(t, false); karahi.localPosition = new Vector3(0.82f, 1.05f, -0.05f);
             Cyl(karahi, new Vector3(0, 0.08f, 0), 0.3f, 0.12f, Mat("#2A2826", 0.4f, 0.4f), "karahi");
             Cyl(karahi, new Vector3(0, 0.15f, 0), 0.26f, 0.01f, Mat("#C88A2A", 0.8f, 0.3f), "oil");
@@ -357,7 +383,7 @@ namespace KarachiTycoon.Game
             Items["nihari"] = deg.gameObject;
             BuildSign(t, W(2.0f, 3.14f, -5.88f), new Vector2(3.7f, 0.72f), s.ShopName, s.ShopUrdu, "#C8202F", "#FFF3D6");
             var tube = AddGlow(t, W(2.0f, 2.72f, -5.88f), new Vector3(1.8f, 0.05f, 0.05f), "#E8F4F0", 2.6f); tube.Backed = true; tube.DhabaOnly = true;
-            var l = AddLight("#E8F4F0", W(1.8f, 3.0f, -5.2f), 2.4f, 10); l.Backed = true; l.DhabaOnly = true;
+            var l = AddLight("#E8F4F0", W(1.8f, 3.0f, -4.6f), 0.7f, 8); l.Backed = true; l.DhabaOnly = true;
             foreach (var tb in d.District.Tables)
             {
                 Box(t, W(tb[0], 0.74f, tb[1]), new Vector3(1.3f, 0.04f, 0.8f), Mat("#D8D2C4", 0.5f), "table_top");
@@ -368,8 +394,10 @@ namespace KarachiTycoon.Game
             {
                 var st = d.District.Seats[i];
                 float y = st[1] < -2.7f ? 0.16f : 0;
-                Box(t, W(st[0], y + 0.44f, st[1]), new Vector3(0.46f, 0.05f, 0.44f), Mat(cols[i % 4], 0.5f), "chair_seat");
-                Box(t, W(st[0], y + 0.22f, st[1]), new Vector3(0.4f, 0.44f, 0.38f), Mat(cols[i % 4], 0.5f), "chair_legs");
+                var chair = new GameObject("chair").transform; chair.SetParent(t, false);
+                Box(chair, W(st[0], y + 0.44f, st[1]), new Vector3(0.46f, 0.05f, 0.44f), Mat(cols[i % 4], 0.5f), "chair_seat");
+                Box(chair, W(st[0], y + 0.22f, st[1]), new Vector3(0.4f, 0.44f, 0.38f), Mat(cols[i % 4], 0.5f), "chair_legs");
+                chairs.Add(chair.gameObject);
             }
         }
 
@@ -452,19 +480,108 @@ namespace KarachiTycoon.Game
             }
         }
 
+        void Prop(string track, int level, GameObject go)
+        {
+            if (!trackProps.TryGetValue(track, out var l)) trackProps[track] = l = new List<(int, GameObject)>();
+            l.Add((level, go));
+        }
+
+        // The business ladder in the street: built now, hidden until the player reaches each tier.
+        void BuildLadder()
+        {
+            var b = d.Business;
+            // Bara thela: a second cart table with its own striped canopy, and stools where customers sit.
+            cart2Group = new GameObject("tier_cart2"); cart2Group.transform.SetParent(transform, false);
+            var p = d.District.Pitch;
+            var ext = cart2Group.transform;
+            Box(ext, W(p.X + 1.75f, 0.62f, p.Z), new Vector3(1.4f, 0.75f, 0.9f), MatTex("#8A5A32", "wood", new Vector2(1, 1)), "cart2_body");
+            Box(ext, W(p.X + 1.75f, 1.02f, p.Z), new Vector3(1.5f, 0.05f, 1.0f), Mat("#C9C6BE", 0.7f, 0.75f), "cart2_top");
+            for (int i = 0; i < 4; i++) Box(ext, W(p.X + 1.15f + i * 0.4f, 2.3f, p.Z), new Vector3(0.4f, 0.03f, 1.3f), Mat(i % 2 == 0 ? "#2B6FA8" : "#F2D24A"), "canopy2");
+            foreach (var c in new[] { new Vector2(2.4f, -0.45f), new Vector2(2.4f, 0.45f) })
+                Box(ext, W(p.X + c.x, 1.65f, p.Z + c.y), new Vector3(0.04f, 1.25f, 0.04f), Mat("#5A5550"), "canopy_pole");
+            if (b.SeatsCart != null)
+                for (int i = 0; i < b.SeatsCart.Length; i++)
+                {
+                    var st = b.SeatsCart[i];
+                    Cyl(ext, W(st[0], 0.4f, st[1]), 0.17f, 0.04f, Mat(i % 2 == 0 ? "#C8202F" : "#2B6FA8", 0.4f), "stool_seat");
+                    Cyl(ext, W(st[0], 0.2f, st[1]), 0.13f, 0.38f, Mat(i % 2 == 0 ? "#A81A27" : "#235C8C", 0.4f), "stool_legs");
+                }
+            cart2Group.SetActive(false);
+
+            float sx = homeX - 4 + homeBay * 4 + 2;
+            // Pakki dukaan: the shutter goes up on a warm lit shop, tables inside the door, the player's board above.
+            dukaanGroup = new GameObject("tier_dukaan"); dukaanGroup.transform.SetParent(transform, false);
+            var dk = dukaanGroup.transform;
+            Box(dk, W(sx, 1.4f, -5.97f), new Vector3(3.3f, 2.75f, 0.05f), Mat("#7A5A3C"), "shop_inside");
+            var inner = AddGlow(dk, W(sx, 2.7f, -5.93f), new Vector3(2.6f, 0.06f, 0.05f), "#E8F4F0", 1.4f); inner.Backed = true;
+            Box(dk, W(sx - 1.1f, 0.55f, -5.85f), new Vector3(0.9f, 1.1f, 0.2f), MatTex("#8A5A32", "wood", new Vector2(1, 1)), "counter");
+            Box(dk, W(sx + 0.6f, 0.74f, -5.75f), new Vector3(1.1f, 0.04f, 0.6f), Mat("#D8D2C4", 0.5f), "table_in");
+            BuildSign(dk, W(sx, 3.12f, -5.86f), new Vector2(3.6f, 0.64f), state.ShopName, state.ShopUrdu, "#C8202F", "#FFF3D6");
+            var dl = AddLight("#E8F4F0", W(sx, 2.4f, -5.2f), 0.4f, 6); dl.Backed = true; dl.DhabaOnly = false;
+            dukaanLight = dl;
+            dukaanGroup.SetActive(false);
+
+            // Family restaurant: both shops, one long board, the first floor lit as the family hall.
+            restaurantGroup = new GameObject("tier_restaurant"); restaurantGroup.transform.SetParent(transform, false);
+            var rs = restaurantGroup.transform;
+            BuildSign(rs, W(homeX, 3.12f, -5.84f), new Vector2(7.6f, 0.78f), state.ShopName, state.ShopUrdu, "#8E2B25", "#FFF3D6");
+            Box(rs, W(homeX, 5.05f, -5.92f), new Vector3(5.2f, 0.5f, 0.05f), Mat("#2B6FA8", 0.3f), "family_hall_banner");
+            Label(rs, W(homeX, 5.05f, -5.96f), "FAMILY HALL  ·  AC", "#FFF3D6", 0.007f);
+            for (int i = 0; i < 4; i++)
+            {
+                var g = AddGlow(rs, W(homeX - 2.67f + i * 1.6f + (i >= 2 ? 0.8f : 0), 6.6f, -5.93f), new Vector3(0.8f, 1.7f, 0.04f), "#FFC27A", 1.6f); g.Backed = true;
+                Box(rs, W(homeX - 2.67f + i * 1.6f + (i >= 2 ? 0.8f : 0), 5.55f, -6.15f), new Vector3(0.7f, 0.38f, 0.3f), Mat("#D6D3CB", 0.3f), "ac_unit");
+            }
+            restaurantGroup.SetActive(false);
+
+            // Famous restaurant: neon outlining the building and a lit rooftop with tables.
+            famousGroup = new GameObject("tier_famous"); famousGroup.transform.SetParent(transform, false);
+            var fm = famousGroup.transform;
+            foreach (var (pos, size, col) in new[]
+            {
+                (W(homeX, homeH + 0.85f, -5.95f), new Vector3(8.2f, 0.08f, 0.08f), "#FF4FA3"),
+                (W(homeX - 4.05f, homeH / 2 + 1.7f, -5.95f), new Vector3(0.08f, homeH - 3.4f, 0.08f), "#3BEA7A"),
+                (W(homeX + 4.05f, homeH / 2 + 1.7f, -5.95f), new Vector3(0.08f, homeH - 3.4f, 0.08f), "#3BEA7A"),
+                (W(homeX, 3.6f, -5.85f), new Vector3(7.8f, 0.07f, 0.07f), "#FF4FA3"),
+            })
+            { var g = AddGlow(fm, pos, size, col, 3.5f); g.Backed = true; }
+            for (int i = 0; i < 4; i++)
+            {
+                float tx = homeX - 2.6f + i * 1.75f;
+                Box(fm, W(tx, homeH + 0.74f, -9f), new Vector3(1.0f, 0.04f, 0.7f), Mat("#D8D2C4", 0.5f), "roof_table");
+                Box(fm, W(tx, homeH + 0.37f, -9f), new Vector3(0.1f, 0.74f, 0.1f), Mat("#9A9890", 0.6f, 0.6f), "roof_table_leg");
+            }
+            for (int i = 0; i < 12; i++) { var g = AddGlow(fm, W(homeX - 3.7f + i * 0.67f, homeH + 2.1f - Mathf.Sin(i / 11f * Mathf.PI) * 0.35f, -7.5f), new Vector3(0.1f, 0.1f, 0.1f), "#FFC27A", 4f); g.Backed = true; }
+            Wire(fm, W(homeX - 3.8f, homeH + 2.15f, -7.5f), W(homeX + 3.8f, homeH + 2.15f, -7.5f), 0.35f, Mat("#2A2420"));
+            famousGroup.SetActive(false);
+        }
+
+        Practical dukaanLight;
+
         public void RefreshStage(Sim.Sim sim)
         {
-            var s = sim.S; bool dh = s.Stage == "dhaba";
-            Dhaba.SetActive(dh);
+            var s = sim.S;
+            int tier = sim.TierIndex;
+            bool AtLeast(string id) => sim.AtLeast(id);
+            Dhaba.SetActive(AtLeast("dhaba"));
+            cart2Group.SetActive(AtLeast("cart2"));
+            // Stools belong to the bara thela; the dhaba's chairs replace them.
+            foreach (Transform c in cart2Group.transform) if (c.name.StartsWith("stool")) c.gameObject.SetActive(!AtLeast("dhaba"));
+            dukaanGroup.SetActive(AtLeast("dukaan"));
+            restaurantGroup.SetActive(AtLeast("restaurant"));
+            famousGroup.SetActive(AtLeast("famous"));
+            if (toLetShutter != null) toLetShutter.SetActive(!AtLeast("dukaan"));
+            if (toLetSign != null) toLetSign.SetActive(!AtLeast("dukaan"));
+            if (neighbourSign != null) neighbourSign.SetActive(!AtLeast("restaurant"));
+            if (dukaanLight != null) dukaanLight.Base = AtLeast("dukaan") ? 0.4f : 0;
+            // Only as many pavement chairs as the Seating track has bought.
+            int outdoor = Mathf.Min(sim.SeatsAvailable, chairs.Count);
+            for (int i = 0; i < chairs.Count; i++) chairs[i].SetActive(i < outdoor || AtLeast("dukaan"));
             foreach (var kv in Items) kv.Value.SetActive(!sim.IsLocked(kv.Key) || (kv.Key != "nihari" && s.Unlocked[kv.Key]));
-            foreach (var u in sim.D.Upgrades)
-            {
-                var g = Stall.transform.Find("upgrades/upgrade_" + u.Id);
-                if (g != null) g.gameObject.SetActive(sim.Owns(u.Id));
-            }
+            foreach (var kv in trackProps)
+                foreach (var (level, go) in kv.Value) go.SetActive(sim.Level(kv.Key) >= level);
             // The bigger kettle replaces the small one.
-            var small = Stall.transform.Find("chai/kettle");
-            if (small != null) small.gameObject.SetActive(!sim.Owns("kettle"));
+            if (smallKettle != null) smallKettle.SetActive(sim.Level("kitchen") < 1);
         }
     }
 }

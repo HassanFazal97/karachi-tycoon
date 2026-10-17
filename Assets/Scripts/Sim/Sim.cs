@@ -17,6 +17,7 @@ namespace KarachiTycoon.Sim
         public float X, Z, Tx, Tz, Waited, Work, WorkTotal, Timer, Sat;
         public bool Near, Uncle, Taken, Started, Gone;
         public string Regular;   // a named regular's id
+        public List<float[]> SeatAt;   // where they sit (kept even if the seat list is rebuilt mid-day)
         public List<OrderItem> Order;
         public float OrderWeight;
         public int[] Seats;
@@ -102,6 +103,7 @@ namespace KarachiTycoon.Sim
             };
             foreach (var d in D.Dishes) { S.Menu[d.Id] = new MenuEntry { Price = d.Price }; S.Xp[d.Id] = 0; S.Unlocked[d.Id] = d.Unlock.Type == "start"; }
             foreach (var i in D.Ingredients) { S.Stock[i.Id] = 0; S.AutoBuy[i.Id] = i.Target; }
+            Migrate();
             if (tutorial)
             {
                 // The guided day sets up its own lessons: the board starts empty (the player puts chai on),
@@ -166,7 +168,7 @@ namespace KarachiTycoon.Sim
             if (S.QuestActive == null && S.QuestIndex < D.Story.Quests.Count)
             {
                 var q = D.Story.Quests[S.QuestIndex];
-                if (S.Day >= q.MinDay && (q.Stage == null || S.Stage == q.Stage))
+                if (S.Day >= q.MinDay && (q.Stage == null || AtLeast(q.Stage)))
                 {
                     S.QuestActive = q.Id; S.QuestProgress = 0;
                     QuestStarted?.Invoke(q);
@@ -245,7 +247,7 @@ namespace KarachiTycoon.Sim
         }
 
         bool CardFits(CardDef c) =>
-            !S.CardsSeen.Contains(c.Id) && S.Day >= c.MinDay && (c.Stage == null || S.Stage == c.Stage)
+            !S.CardsSeen.Contains(c.Id) && S.Day >= c.MinDay && (c.Stage == null || AtLeast(c.Stage))
             && (c.Slots.Count == 0 || c.Slots.Contains(Slot));
 
         // The player's answer to the card on screen. Returns what happened.
@@ -283,30 +285,143 @@ namespace KarachiTycoon.Sim
             QuestDone?.Invoke(q);
         }
 
-        // ---------- thela upgrades ----------
-        public bool Owns(string upgrade) => S.Owned.Contains(upgrade);
+        // ---------- the business ladder and upgrade tracks ----------
+        public List<StageDef> Tiers => D.Business.Tiers;
+        public int TierIndex => Tiers.FindIndex(t => t.Id == S.Stage);
+        public bool AtLeast(string tier) => TierIndex >= Tiers.FindIndex(t => t.Id == tier);
+        public StageDef NextTier => TierIndex + 1 < Tiers.Count ? Tiers[TierIndex + 1] : null;
+        public TrackDef Track(string id) => D.Business.Tracks.Find(t => t.Id == id);
 
-        public float UpgradeMult(string key)
+        public int Level(string track) => track == "staff" ? StaffCount : (S.Tracks.TryGetValue(track, out var n) ? n : 0);
+        public int Cap(string track) => track == "staff" ? Stage.StaffCap : (Stage.Caps.TryGetValue(track, out var n) ? n : 0);
+        public int FinalCap(string track) => track == "staff" ? Tiers[^1].StaffCap : (Tiers[^1].Caps.TryGetValue(track, out var n) ? n : 0);
+        public bool Maxed(string track) => Level(track) >= Cap(track);
+
+        // The next person on the team, in roster order.
+        public StaffDef NextHire => D.Staff.FirstOrDefault(st => !Hired(st.Id));
+        public bool Hired(string id) => S.Staff.TryGetValue(id, out var h) && h;
+
+        public int TrackCost(string track)
         {
-            float m = 1;
-            foreach (var id in S.Owned)
-            {
-                var u = D.Upgrades.Find(x => x.Id == id);
-                if (u != null && u.Effect.TryGetValue(key, out var v)) m *= v;
-            }
-            return m;
+            if (track == "staff") { var n = NextHire; return n == null ? 0 : n.Wage * 4; } // signing fee: four days' wages
+            var t = Track(track);
+            return (int)Math.Round(t.Base * Math.Pow(t.Growth, Level(track)) / 100f) * 100;
         }
 
-        public bool BuyUpgrade(string id)
+        public bool UpgradeTrack(string track)
         {
-            var u = D.Upgrades.Find(x => x.Id == id);
-            if (u == null || Owns(id)) return false;
-            if (S.Cash < u.Cost) { Noticed?.Invoke(new Notice { Kind = "warn", Key = "noCash" }); return false; }
-            S.Cash -= u.Cost; Today.Upgrades += u.Cost;
-            S.Owned.Add(id);
-            UpgradeBought?.Invoke(id);
+            if (Maxed(track)) return false;
+            int cost = TrackCost(track);
+            if (S.Cash < cost) { Noticed?.Invoke(new Notice { Kind = "warn", Key = "noCash" }); return false; }
+            if (track == "staff")
+            {
+                var n = NextHire;
+                if (n == null || !Hire(n.Id)) return false;
+            }
+            else S.Tracks[track] = Level(track) + 1;
+            S.Cash -= cost; Today.Upgrades += cost;
+            if (track == "seating") BuildSeats();
+            UpgradeBought?.Invoke(track);
             CashChanged?.Invoke();
             return true;
+        }
+
+        // Effects of the tracks (each "per" step from business.json).
+        float Per(string track) => (Track(track)?.Per ?? 0) * Level(track);
+        public float WorkMult => Math.Max(0.35f, 1 - Per("training")) * Math.Max(0.35f, 1 - Per("kitchen"));
+        float TrackPatience => (1 + Per("seating")) * (1 + Per("comfort"));
+        float SpoilMult => Math.Max(0.3f, 1 - Per("storage"));
+        float VisitMult => 1 + Per("signboard");
+
+        // Seats: a share of the tier's places from the start, the rest from the Seating track.
+        public int SeatsAvailable
+        {
+            get
+            {
+                if (Stage.Seats == 0) return 0;
+                int cap = Math.Max(1, Cap("seating"));
+                return (int)Math.Round(Stage.Seats * (0.4f + 0.6f * Math.Min(1f, Level("seating") / (float)cap)));
+            }
+        }
+
+        // Where seated customers go: the pavement places first, then inside the dukaan (and the next shop).
+        public List<float[]> SeatPositions { get; private set; } = new();
+
+        void BuildSeats()
+        {
+            int n = SeatsAvailable;
+            var list = new List<float[]>();
+            var outdoor = Stage.Id == "cart2" ? D.Business.SeatsCart : D.District.Seats;
+            for (int i = 0; i < Math.Min(n, outdoor.Length); i++) list.Add(outdoor[i]);
+            var indoor = D.Business.SeatsIndoor;
+            for (int i = list.Count; i < n && indoor.Length > 0; i++)
+                list.Add(indoor[AtLeast("restaurant") ? i % indoor.Length : 0]);
+            var taken = seatTaken;
+            seatTaken = new int[list.Count];
+            for (int i = 0; i < Math.Min(taken.Length, seatTaken.Length); i++) seatTaken[i] = taken[i];
+            SeatPositions = list;
+        }
+
+        // What the next tier still needs: (text, met).
+        public List<(string text, bool met)> TierNeeds()
+        {
+            var o = new List<(string, bool)>();
+            var t = NextTier;
+            if (t?.Requires == null) return o;
+            var r = t.Requires;
+            if (r.Act == 1) o.Add(("Finish Act 1: Rs 75,000 earned and 300 served", S.Act1Done));
+            if (r.Act == 2) o.Add(("Finish Act 2: two stars and Rs 3 lakh in the galla", S.Act2Done));
+            if (r.Served > 0) o.Add(($"{r.Served:N0} customers served ({Math.Min(S.TotalServed, r.Served):N0})", S.TotalServed >= r.Served));
+            if (r.Fame > 0) o.Add(($"Shohrat {r.Fame:0.0} stars ({S.Fame:0.0})", S.Fame >= r.Fame));
+            foreach (var m in r.Maxed) o.Add(($"{Track(m)?.Name ?? m} at max for the {Stage.Name}", Maxed(m)));
+            o.Add(($"Rs {t.SetupCost:N0} to build it", S.Cash >= t.SetupCost));
+            return o;
+        }
+
+        public bool TierReady => NextTier != null && TierNeeds().All(n => n.met);
+
+        public bool UpgradeTier()
+        {
+            var t = NextTier;
+            if (t == null) return false;
+            if (!TierReady) { if (S.Cash < t.SetupCost) Noticed?.Invoke(new Notice { Kind = "warn", Key = "noCash" }); return false; }
+            S.Cash -= t.SetupCost; Today.Setup += t.SetupCost;
+            S.Stage = t.Id;
+            if (AtLeast("dhaba")) S.Act = Math.Max(S.Act, 2);
+            BuildSeats();
+            StageChanged?.Invoke();
+            Noticed?.Invoke(new Notice { Kind = "good", Key = "tierUp", Text = t.Name });
+            CheckUnlocks();
+            return true;
+        }
+
+        // For tests and tools: jump to a tier with every track at its cap.
+        public void DebugTier(string id, bool maxTracks = true)
+        {
+            S.Stage = id;
+            if (AtLeast("dhaba")) S.Act1Done = true;
+            if (AtLeast("dukaan")) S.Act2Done = true;
+            if (maxTracks)
+            {
+                foreach (var t in D.Business.Tracks) if (t.Id != "staff") S.Tracks[t.Id] = Cap(t.Id);
+                while (!Maxed("staff") && NextHire != null) Hire(NextHire.Id);
+            }
+            BuildSeats();
+            CheckUnlocks();
+            StageChanged?.Invoke();
+        }
+
+        // Old saves: M3 upgrades become track levels, and every roster member gets an entry.
+        void Migrate()
+        {
+            foreach (var st in D.Staff) if (!S.Staff.ContainsKey(st.Id)) S.Staff[st.Id] = false;
+            if (S.Tracks.Count == 0 && S.Owned.Count > 0)
+            {
+                int L(string id) => S.Owned.Contains(id) ? 1 : 0;
+                S.Tracks["seating"] = L("stools");
+                S.Tracks["kitchen"] = L("kettle") + L("tawa2");
+                S.Tracks["signboard"] = L("tubelight") + L("sign");
+            }
         }
 
         // ---------- "Aaj ka kaam": three daily goals ----------
@@ -396,6 +511,7 @@ namespace KarachiTycoon.Sim
         public void Load(string json)
         {
             S = JsonConvert.DeserializeObject<GameState>(json);
+            Migrate();
             StartDay(resumed: true);
         }
 
@@ -406,6 +522,10 @@ namespace KarachiTycoon.Sim
         public string Slot => SlotAt(S.Minute);
         public string Weekday => Weekdays[(S.Day - 1) % 7];
         public int StaffCount => S.Staff.Values.Count(v => v);
+        IEnumerable<StaffDef> Team => D.Staff.Where(st => Hired(st.Id));
+        float StaffSpeed => Team.Aggregate(1f, (m, st) => m * st.Speed);
+        float StaffPatience => Team.Aggregate(1f, (m, st) => m * st.Patience);
+        int CookCount => 1 + Team.Sum(st => st.Cooks);
 
         public int MasteryLevel(string id)
         {
@@ -414,7 +534,7 @@ namespace KarachiTycoon.Sim
             return l;
         }
 
-        bool NihariReady => S.Stage == "dhaba" && S.Staff["karigar"];
+        bool NihariReady => AtLeast("dhaba") && Hired("karigar");
         public bool IsLocked(string id) => !S.Unlocked[id] || (id == "nihari" && !NihariReady);
         public bool IsAvailable(string id) => !IsLocked(id) && S.Menu[id].On;
         public bool PowerOut => Outages.Any(o => S.Minute >= o.From && S.Minute < o.To);
@@ -424,7 +544,7 @@ namespace KarachiTycoon.Sim
             var d = Dish[id]; var f = D.Balance.Fat[S.Fat];
             float q = d.Quality + MasteryLevel(id) * 3 + PageAdd("quality_" + id);
             if (d.Fat > 0) q += f.Quality;
-            if (S.Staff["karigar"]) q += StaffDefs["karigar"].Quality;
+            q += Team.Sum(st => st.Quality);
             return q;
         }
 
@@ -449,7 +569,7 @@ namespace KarachiTycoon.Sim
         }
 
         public float PatienceOf(Customer c) =>
-            Arch[c.Arch].Patience * Stage.Patience * (S.Staff["chhotu"] ? StaffDefs["chhotu"].Patience : 1) * (Easy ? 2f : 1) * UpgradeMult("patience") * PageMult("patience");
+            Arch[c.Arch].Patience * Stage.Patience * StaffPatience * (Easy ? 2f : 1) * TrackPatience * PageMult("patience");
 
         public List<Customer> Queue() => Customers.Where(c => c.State == "queue").ToList();
 
@@ -459,7 +579,7 @@ namespace KarachiTycoon.Sim
             var b = D.Balance;
             S.Minute = b.DayStart; S.DayOver = false;
             Customers.Clear(); Pending.Clear();
-            Cooks = Enumerable.Range(0, 1 + (S.Staff["karigar"] ? 1 : 0)).Select(_ => new Cook()).ToList();
+            Cooks = Enumerable.Range(0, CookCount).Select(_ => new Cook()).ToList();
             Outages.Clear();
             if (R() < b.Outage.Chance)
             {
@@ -469,7 +589,7 @@ namespace KarachiTycoon.Sim
             uncleTimes = new List<float> { 440 + R() * 30, 1100 + R() * 40 };
             if (TutorialDay) { Outages.Clear(); uncleTimes[0] = b.DayStart + 4; }
             wasOut = false;
-            seatTaken = new int[D.District.Seats.Length];
+            seatTaken = new int[0]; BuildSeats();
             warned.Clear();
             if (!resumed) NewGoals();
             PlanStory();
@@ -511,15 +631,15 @@ namespace KarachiTycoon.Sim
             foreach (var c in Customers) if (c.State == "queue" && !c.Started) ReturnStock(c);
             Customers.Clear(); Pending.Clear(); foreach (var k in Cooks) k.Order = null;
             t.Rent = (int)Math.Round(Stage.RentWeek / 7f);
-            t.Wages = S.Staff.Where(kv => kv.Value).Sum(kv => StaffDefs[kv.Key].Wage);
+            t.Wages = Team.Sum(st => st.Wage);
             foreach (var ing in D.Ingredients)
             {
-                int lost = (int)Math.Round(S.Stock[ing.Id] * ing.Spoil * PageMult("spoil"));
+                int lost = (int)Math.Round(S.Stock[ing.Id] * ing.Spoil * PageMult("spoil") * SpoilMult);
                 if (lost > 0) { t.Wastage[ing.Id] = lost; t.WastageRs += lost * ing.Cost; S.Stock[ing.Id] -= lost; }
             }
             S.Cash -= t.Rent + t.Wages + (int)Math.Round(t.Fuel);
             // Act 1 never ends the game: if the galla can't buy a day's stock, Uncle Rasheed tops it up.
-            if (S.Stage == "cart")
+            if (!AtLeast("dhaba"))
             {
                 int floor = OneDayOfStock();
                 if (S.Cash < floor) { t.Loan = floor - S.Cash; S.Cash = floor; }
@@ -552,10 +672,10 @@ namespace KarachiTycoon.Sim
 
         public bool Hire(string id)
         {
-            if (S.Staff[id]) return false;
+            if (Hired(id)) return false;
             if (StaffCount >= Stage.StaffCap) { Noticed?.Invoke(new Notice { Kind = "warn", Key = "staffCap" }); return false; }
             S.Staff[id] = true;
-            if (id == "karigar") Cooks.Add(new Cook());
+            for (int k = 0; k < StaffDefs[id].Cooks; k++) Cooks.Add(new Cook());
             StaffChanged?.Invoke();
             CheckUnlocks();
             return true;
@@ -563,9 +683,9 @@ namespace KarachiTycoon.Sim
 
         public void Fire(string id)
         {
-            if (!S.Staff[id]) return;
+            if (!Hired(id)) return;
             S.Staff[id] = false;
-            if (id == "karigar" && Cooks.Count > 1)
+            for (int n = 0; n < StaffDefs[id].Cooks && Cooks.Count > 1; n++)
             {
                 int i = Cooks.FindIndex(1, k => k.Order == null);
                 if (i < 0) i = Cooks.Count - 1;
@@ -575,23 +695,12 @@ namespace KarachiTycoon.Sim
             StaffChanged?.Invoke();
         }
 
-        public bool RentDhaba()
-        {
-            int cost = D.Balance.Stages["dhaba"].SetupCost;
-            if (!S.Act1Done || S.Stage != "cart") return false;
-            if (S.Cash < cost) { Noticed?.Invoke(new Notice { Kind = "warn", Key = "noCash" }); return false; }
-            S.Cash -= cost; Today.Setup += cost;
-            S.Stage = "dhaba"; S.Act = 2;
-            StageChanged?.Invoke();
-            Noticed?.Invoke(new Notice { Kind = "good", Key = "dhabaOpen" });
-            CheckUnlocks();
-            return true;
-        }
+
 
         public bool BuyGenerator()
         {
             int cost = D.Balance.Generator.Cost;
-            if (S.Generator || S.Stage != "dhaba") return false;
+            if (S.Generator || !AtLeast("dhaba")) return false;
             if (S.Cash < cost) { Noticed?.Invoke(new Notice { Kind = "warn", Key = "noCash" }); return false; }
             S.Cash -= cost; Today.Setup += cost; S.Generator = true;
             return true;
@@ -653,8 +762,7 @@ namespace KarachiTycoon.Sim
 
         float FootfallRate()
         {
-            float r = D.Balance.Footfall[Slot];
-            if (Slot == "night") r *= UpgradeMult("night");
+            float r = D.Balance.Footfall[Slot] * Stage.Draw;
             if (Weekday == "Sat" || Weekday == "Sun") r *= 1.15f;
             if (Weekday == "Fri" && S.Minute > 780 && S.Minute < 855) r *= 0.3f; // Jumma
             if (PowerOut) r *= 0.8f;
@@ -723,7 +831,7 @@ namespace KarachiTycoon.Sim
             var order = ChooseOrder(a, null, out float weight);
             if (order != null)
             {
-                float p = b.VisitBase * (0.55f + 0.3f * S.Fame) * Clamp(weight / 1.2f, 0.5f, 1.5f) * st.Visit * UpgradeMult("visit") * PageMult("visit");
+                float p = b.VisitBase * (0.55f + 0.3f * S.Fame) * Clamp(weight / 1.2f, 0.5f, 1.5f) * st.Visit * VisitMult * PageMult("visit");
                 if (a.Id == "family") p *= st.FamilyVisit;
                 if (S.Minute < S.AaoUntil) p *= b.Aao.Mult;
                 if (PowerOut && !S.Generator) p *= 0.8f;
@@ -816,8 +924,8 @@ namespace KarachiTycoon.Sim
                     if (S.Stock[kv.Key] < 3 && warned.Add(kv.Key)) Noticed?.Invoke(new Notice { Kind = "warn", Key = "lowStock", Ing = kv.Key });
                 }
             c.Taken = true;
-            float work = c.Order.Sum(it => Dish[it.Dish].Cook * UpgradeMult("cook_" + it.Dish) * (float)Math.Pow(it.Qty, 0.7) * (1 - 0.04f * MasteryLevel(it.Dish)));
-            if (S.Staff["chhotu"]) work *= StaffDefs["chhotu"].Speed;
+            float work = c.Order.Sum(it => Dish[it.Dish].Cook * (float)Math.Pow(it.Qty, 0.7) * (1 - 0.04f * MasteryLevel(it.Dish)));
+            work *= StaffSpeed * WorkMult;
             if (PowerOut && !S.Generator) work *= 1.3f;
             c.Work = c.WorkTotal = work;
             Pending.Add(c);
@@ -891,11 +999,12 @@ namespace KarachiTycoon.Sim
             else Bubble?.Invoke(new BubbleEvent { C = c, Mood = sat > 0.15f ? 1 : sat < -0.15f ? -1 : 0, Served = true, Bill = bill });
             CashChanged?.Invoke();
             var seats = FreeSeats();
-            if (S.Stage == "dhaba" && seats.Count >= c.Party)
+            if (seatTaken.Length > 0 && seats.Count >= c.Party)
             {
                 c.Seats = seats.Take(c.Party).ToArray();
                 foreach (var i in c.Seats) seatTaken[i] = c.Id;
-                var s0 = D.District.Seats[c.Seats[0]];
+                c.SeatAt = c.Seats.Select(i => SeatPositions[i]).ToList();
+                var s0 = c.SeatAt[0];
                 c.State = "walk"; c.Dest = "seat"; c.Tx = s0[0]; c.Tz = s0[1];
             }
             else Leave(c);
@@ -927,7 +1036,7 @@ namespace KarachiTycoon.Sim
         {
             c.State = "walk"; c.Dest = "leave";
             c.Tx = c.X < 0 ? -Edge : Edge; c.Tz = -1.2f + R() * 0.8f;
-            if (c.Seats != null) { foreach (var i in c.Seats) seatTaken[i] = 0; c.Seats = null; }
+            if (c.Seats != null) { foreach (var i in c.Seats) if (i < seatTaken.Length && seatTaken[i] == c.Id) seatTaken[i] = 0; c.Seats = null; }
         }
 
         void UpdateCustomers(float dt)
@@ -1020,7 +1129,7 @@ namespace KarachiTycoon.Sim
         {
             var b = D.Balance;
             if (!S.Act1Done && S.TotalRevenue >= b.Act1.Revenue && S.TotalServed >= b.Act1.Served) { S.Act1Done = true; ActDone?.Invoke(1); }
-            if (S.Stage == "dhaba" && !S.Act2Done && S.Fame >= b.Act2.Fame && S.Cash >= b.Act2.Cash) { S.Act2Done = true; ActDone?.Invoke(2); }
+            if (AtLeast("dhaba") && !S.Act2Done && S.Fame >= b.Act2.Fame && S.Cash >= b.Act2.Cash) { S.Act2Done = true; ActDone?.Invoke(2); }
         }
     }
 }

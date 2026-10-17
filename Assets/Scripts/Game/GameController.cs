@@ -90,7 +90,8 @@ namespace KarachiTycoon.Game
             Sim.StaffChanged += () => Street.RefreshStage(Sim);
             Sim.StageChanged += () => Street.RefreshStage(Sim);
             Sim.Shouted += () => Toast("\"Aao bhai, garma garam!\" People nearby turn to look.", "good");
-            Sim.UpgradeBought += id => { Street.RefreshStage(Sim); Analytics.Event("upgrade_buy", ("upgrade", id), ("day", Sim.S.Day)); };
+            Sim.UpgradeBought += id => { Street.RefreshStage(Sim); Analytics.Event("upgrade_buy", ("track", id), ("level", Sim.Level(id)), ("day", Sim.S.Day)); };
+            Sim.StageChanged += () => Analytics.Event("tier_up", ("tier", Sim.S.Stage), ("day", Sim.S.Day));
             Sim.FriendLevelUp += (id, level) =>
             {
                 var r = Data.Story.Regulars.Find(x => x.Id == id);
@@ -128,6 +129,7 @@ namespace KarachiTycoon.Game
                 "noCash" => "Not enough cash in the galla.",
                 "staffCap" => "No room for more staff here. The dhaba has space for more.",
                 "dhabaOpen" => "The takhta is set up. Hire a karigar to start nihari.",
+                "tierUp" => $"Your {n.Text} is open! New caps for every upgrade: see Upgrades.",
                 "outage" => "Load shedding! The block goes dark. Service slows down.",
                 "outageGen" => "Load shedding. Your generator kicks in.",
                 "lowStock" => $"Almost out of {Sim.Ing[n.Ing].En}. Buy more in Supplies.",

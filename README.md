@@ -108,6 +108,36 @@ Following the art style guide ("painted realism", the five Karachi rules, the Bu
 
 Before and after screenshots are in `design/screenshots/m6`.
 
+## The business ladder and upgrade tracks
+
+Defined in `Resources/Data/business.json`, run by the Sim (plain C#), built on the street by `StreetBuilder`.
+
+| Tier | What you see | Seats | Staff | Cost | Needs |
+|---|---|---|---|---|---|
+| Thela | Dada's cart | 0 | 1 | | |
+| Bara thela | a second cart, a wider canopy, stools | 4 | 1 | Rs 12k | 120 served; Kitchen and Signboard at max |
+| Pavement dhaba | takhta, nihari deg, plastic chairs on the road | 10 | 3 | Rs 35k | Act 1; Kitchen at max |
+| Pakki dukaan | the "To Let" shutter goes up: lit shop, counter, your board | 24 | 5 | Rs 1.5 lakh | Act 2; Seating and Kitchen at max |
+| Family restaurant | both shops, one long board, the first-floor family hall with AC | 40 | 8 | Rs 4.5 lakh | 2.8 stars, 6,000 served; Staff and Comfort at max |
+| Famous restaurant | neon over the whole building, a lit rooftop | 60 | 10 | Rs 12 lakh | 3.6 stars; Kitchen, Seating and Signboard at max |
+
+Bigger places draw people from across the city (`draw`), pay more rent, and raise every track's cap.
+
+**Tracks** (Upgrades panel; level pips, now and next effect, cost; a MAX stamp at the tier's cap):
+- **Staff:** hire the next person on the roster in `staff.json`: chhotu, karigar, waiters, cooks, a cashier, a manager, ten in all.
+- **Training:** faster service.
+- **Seating:** more seats; customers also wait longer.
+- **Kitchen:** faster cooking.
+- **Comfort:** fan, then cooler, then AC; customers wait longer.
+- **Storage:** less overnight spoilage.
+- **Signboard:** more people stop.
+
+Many levels show on the cart: a bigger kettle, a second tawa, truck art, tube lights, a fan, a cooler, an ice box, and the dhaba's chairs.
+
+Pacing with the sensible-player run (`dotnet run --project Tools/BalanceRunner -- ghee 7`): Act 1 on day 3, Bara thela day 3-4, Pavement dhaba day 5, Act 2 day 8, Pakki dukaan day 9, Family restaurant day 13-14, Famous restaurant day 21. `-- migrate` checks that an old save (M3 upgrades, two-person staff) loads into the tracks.
+
+Headless screenshots: start a test build with `-batchmode -kt-offscreen` and the ShotRunner renders the camera and the UI into textures. That works with the screen locked or on a CI machine.
+
 ## Ads and purchases
 
 Ads live in `Assets/Scripts/Game/Ads` (design doc §22):

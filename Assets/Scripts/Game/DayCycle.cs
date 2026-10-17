@@ -68,7 +68,7 @@ namespace KarachiTycoon.Game
             Sun.color = L(a.SunC, b.SunC);
             Sun.intensity = night ? 0.15f : sun;
 
-            bool outage = sim.PowerOut, gen = sim.S.Generator, dhaba = sim.S.Stage == "dhaba";
+            bool outage = sim.PowerOut, gen = sim.S.Generator, dhaba = sim.AtLeast("dhaba");
             float time = Time.time;
             foreach (var p in street.Practicals)
             {

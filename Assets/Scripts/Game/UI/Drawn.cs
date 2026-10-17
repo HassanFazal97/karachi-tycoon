@@ -169,6 +169,19 @@ namespace KarachiTycoon.Game
                     p.BezierCurveTo(P(.56f, .4f), P(.54f, .22f), P(.5f, .06f));
                     p.ClosePath(); p.Fill();
                     break;
+                case "seat": // a plastic chair
+                    p.BeginPath(); p.MoveTo(P(.3f, .12f)); p.LineTo(P(.3f, .55f)); p.LineTo(P(.74f, .55f)); p.Stroke();
+                    p.BeginPath(); p.MoveTo(P(.3f, .55f)); p.LineTo(P(.26f, .9f)); p.MoveTo(P(.72f, .55f)); p.LineTo(P(.76f, .9f)); p.Stroke();
+                    break;
+                case "fan": // a pedestal fan
+                    Circle(p, P(.5f, .36f), s * .26f); p.Stroke();
+                    for (int i = 0; i < 3; i++)
+                    {
+                        float a = (i * 120 - 90) * Mathf.Deg2Rad;
+                        p.BeginPath(); p.MoveTo(P(.5f, .36f)); p.LineTo(P(.5f, .36f) + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * s * .22f); p.Stroke();
+                    }
+                    p.BeginPath(); p.MoveTo(P(.5f, .62f)); p.LineTo(P(.5f, .88f)); p.MoveTo(P(.32f, .9f)); p.LineTo(P(.68f, .9f)); p.Stroke();
+                    break;
                 case "target": // goals
                     Circle(p, P(.5f, .5f), s * .38f); p.Stroke();
                     Circle(p, P(.5f, .5f), s * .2f); p.Stroke();

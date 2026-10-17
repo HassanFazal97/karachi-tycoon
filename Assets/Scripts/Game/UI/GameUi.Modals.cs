@@ -114,12 +114,11 @@ namespace KarachiTycoon.Game
             box.Add(Text(n == 1 ? "ACT 1 COMPLETE" : "ACT 2 COMPLETE", "label-gold"));
             box.Add(Text(n == 1 ? "Thela se takhta" : "Burns Road knows your name", "story-title"));
             box.Add(Text(n == 1
-                ? "People on Burns Road know your chai now. The owner upstairs says you can put a takhta and plastic chairs on the pavement in front of the old \"To Let\" shop."
-                : $"Two-star Shohrat and Rs 3 lakh saved, on day {sim.S.Day}. Uncle Rasheed has a table now, and the nihari deg is empty by nine. This is the end of the Burns Road slice.", "story-body"));
+                ? "People on Burns Road know your chai now. The owner upstairs says you can put a takhta and plastic chairs on the pavement in front of the old \"To Let\" shop. Build it in Upgrades once your kitchen is ready."
+                : $"Two-star Shohrat and Rs 3 lakh saved, on day {sim.S.Day}. Uncle Rasheed has a table now, and the nihari deg is empty by nine. The \"To Let\" shop behind your dhaba can be yours: build the Pakki dukaan in Upgrades.", "story-body"));
             var actions = Div("row", "modal-actions");
             box.Add(actions);
-            if (n == 1) actions.With(Div("grow"), Btn("Open the Shop", () => { CloseModal(); OpenSheet("Shop"); }, "btn-primary", "btn-big"));
-            else actions.With(Div("grow"), Btn("Keep playing", CloseModal, "btn-primary", "btn-big"));
+            actions.With(Div("grow"), Btn("Open Upgrades", () => { CloseModal(); OpenSheet("Shop"); }, "btn-primary", "btn-big"));
         }
 
         // ---------- settings / pause ----------
